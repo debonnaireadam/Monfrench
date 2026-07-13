@@ -93,11 +93,7 @@ export async function POST(request: Request) {
       const username = String(get("username") ?? "").trim().toLowerCase(); const password = String(get("password") ?? ""); const name = String(get("displayName") ?? "").trim();
       if (!/^[a-z0-9._@+-]{3,80}$/.test(username) || password.length < 12 || !name) return json({ error: "Utilisez un identifiant valide et un mot de passe d’au moins 12 caractères." }, 400);
       const hashed = await passwordHash(password);
-      try {
-        await env.DB.prepare(`INSERT INTO users(id,username,display_name,role,password_hash,password_salt,active,must_change_password,created_at) VALUES(?,?,?,?,?,?,1,0,?)`).bind(id(), username, name, "teacher", hashed.hash, hashed.salt, now()).run();
-      } catch (error) {
-        return json({ error: "Échec de l’écriture du compte enseignant.", diagnostic: error instanceof Error ? error.message : String(error) }, 500);
-      }
+      await env.DB.prepare(`INSERT INTO users(id,username,display_name,role,password_hash,password_salt,active,must_change_password,created_at) VALUES(?,?,?,?,?,?,1,0,?)`).bind(id(), username, name, "teacher", hashed.hash, hashed.salt, now()).run();
       return json({ ok: true });
     }
 

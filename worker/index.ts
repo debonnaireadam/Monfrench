@@ -8,6 +8,7 @@ interface Env {
   FILES: R2Bucket;
   TURNSTILE_SITE_KEY?: string;
   TURNSTILE_SECRET_KEY?: string;
+  TEACHER_SETUP_CODE?: string;
   IMAGES: {
     input(stream: ReadableStream): {
       transform(options: Record<string, unknown>): {

@@ -56,7 +56,7 @@ async function dashboard(current: Session) {
     ]);
     return { user: current, students: students.results, activities: activities.results, assignments: assignments.results, submissions: submissions.results };
   }
-  const assignments = await env.DB.prepare(`SELECT a.id,a.due_at,COALESCE(NULLIF(a.instructions,''),ac.instructions) instructions,ac.title,ac.category,ac.description,ac.original_name,ac.external_url,ast.status,s.writing,s.feedback,s.corrected_at FROM assignment_students ast JOIN assignments a ON a.id=ast.assignment_id JOIN activities ac ON ac.id=a.activity_id LEFT JOIN submissions s ON s.assignment_id=a.id AND s.student_id=ast.student_id WHERE ast.student_id=? ORDER BY a.published_at DESC`).bind(current.id).all();
+  const assignments = await env.DB.prepare(`SELECT a.id,ac.id activity_id,a.due_at,COALESCE(NULLIF(a.instructions,''),ac.instructions) instructions,ac.title,ac.category,ac.description,ac.original_name,ac.external_url,ast.status,s.writing,s.feedback,s.corrected_at FROM assignment_students ast JOIN assignments a ON a.id=ast.assignment_id JOIN activities ac ON ac.id=a.activity_id LEFT JOIN submissions s ON s.assignment_id=a.id AND s.student_id=ast.student_id WHERE ast.student_id=? ORDER BY a.published_at DESC`).bind(current.id).all();
   return { user: current, assignments: assignments.results };
 }
 
@@ -79,6 +79,8 @@ export async function POST(request: Request) {
     if (action === "setup") {
       const existing = await env.DB.prepare(`SELECT COUNT(*) count FROM users WHERE role='teacher'`).first<{ count: number }>();
       if (existing?.count) return json({ error: "Le compte enseignant existe déjà." }, 409);
+      const setupCode = env.TEACHER_SETUP_CODE as string | undefined;
+      if (!setupCode || String(get("setupCode") ?? "") !== setupCode) return json({ error: "Code de configuration incorrect." }, 403);
       if (!(await turnstile(request, String(get("turnstileToken") ?? "") || null))) return json({ error: "Vérification de sécurité échouée." }, 400);
       const username = String(get("username") ?? "").trim().toLowerCase(); const password = String(get("password") ?? ""); const name = String(get("displayName") ?? "").trim();
       if (!/^[a-z0-9._@+-]{3,80}$/.test(username) || password.length < 12 || !name) return json({ error: "Utilisez un identifiant valide et un mot de passe d’au moins 12 caractères." }, 400);

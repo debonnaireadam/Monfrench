@@ -10,10 +10,11 @@ test("build contains the portal and protected API routes", async () => {
   assert.match(page, /Corrections/);
 });
 
-test("authentication uses hashed passwords, server sessions and CSRF", async () => {
+test("authentication uses keyed password hashes, server sessions and CSRF", async () => {
   const route = await readFile("app/api/portal/route.ts", "utf8");
-  assert.match(route, /PBKDF2/);
-  assert.match(route, /iterations: 210_000/);
+  assert.match(route, /PASSWORD_PEPPER/);
+  assert.match(route, /HMAC/);
+  assert.match(route, /timingSafeEqual/);
   assert.match(route, /HttpOnly; Secure; SameSite=Lax/);
   assert.match(route, /x-csrf-token/);
   assert.match(route, /siteverify/);

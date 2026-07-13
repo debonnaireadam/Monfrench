@@ -13,10 +13,18 @@ const randomToken = () => bytesToHex(crypto.getRandomValues(new Uint8Array(32)))
 const sha256 = async (value: string) => bytesToHex(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value))));
 
 async function passwordHash(password: string, saltHex?: string) {
-  const salt = saltHex ? Uint8Array.from(saltHex.match(/.{2}/g)!.map((x) => parseInt(x, 16))) : crypto.getRandomValues(new Uint8Array(16));
-  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
-  const result = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations: 210_000 }, key, 256);
-  return { hash: bytesToHex(new Uint8Array(result)), salt: bytesToHex(salt) };
+  const pepper = env.PASSWORD_PEPPER as string | undefined;
+  if (!pepper) throw new Error("PASSWORD_PEPPER is unavailable");
+  const salt = saltHex ?? bytesToHex(crypto.getRandomValues(new Uint8Array(16)));
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(pepper),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const result = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${salt}:${password}`));
+  return { hash: bytesToHex(new Uint8Array(result)), salt };
 }
 
 function cookie(request: Request, name: string) {
@@ -97,7 +105,11 @@ export async function POST(request: Request) {
       if (attempt && Date.now() - Date.parse(attempt.window_started_at) < 15 * 60_000 && attempt.count >= 8) return json({ error: "Trop de tentatives. Réessayez dans 15 minutes." }, 429);
       const user = await env.DB.prepare(`SELECT * FROM users WHERE username=? AND active=1`).bind(username).first<User & {password_hash:string;password_salt:string}>();
       const candidate = user ? await passwordHash(password, user.password_salt) : await passwordHash(password, "00000000000000000000000000000000");
-      if (!user || candidate.hash !== user.password_hash) {
+      const valid = user ? crypto.subtle.timingSafeEqual(
+        Uint8Array.from(candidate.hash.match(/.{2}/g)!.map((x) => parseInt(x, 16))),
+        Uint8Array.from(user.password_hash.match(/.{2}/g)!.map((x) => parseInt(x, 16))),
+      ) : false;
+      if (!user || !valid) {
         await env.DB.prepare(`INSERT INTO login_attempts(key,count,window_started_at) VALUES(?,1,?) ON CONFLICT(key) DO UPDATE SET count=CASE WHEN window_started_at<? THEN 1 ELSE count+1 END,window_started_at=CASE WHEN window_started_at<? THEN excluded.window_started_at ELSE window_started_at END`).bind(key, now(), new Date(Date.now()-15*60_000).toISOString(), new Date(Date.now()-15*60_000).toISOString()).run();
         return json({ error: "Identifiant ou mot de passe incorrect." }, 401);
       }

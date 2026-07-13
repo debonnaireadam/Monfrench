@@ -34,14 +34,14 @@ function Activities({portal,send,busy}:{portal:Portal;send:(x:any)=>Promise<bool
   const multipart=async(form:HTMLFormElement,file:File)=>{
     const values=new FormData(form), metadata={title:String(values.get("title")||""),category:String(values.get("category")||""),description:String(values.get("description")||""),instructions:String(values.get("instructions")||""),fileName:file.name,contentType:file.type||"application/octet-stream",fileSize:file.size};
     const call=async(body:Record<string,unknown>|FormData)=>{const isForm=body instanceof FormData;const response=await fetch("/api/portal",{method:"POST",headers:{...(isForm?{}:{"Content-Type":"application/json"}),"x-csrf-token":portal.csrfToken||""},body:isForm?body:JSON.stringify(body)});const text=await response.text();let data:any={};try{data=JSON.parse(text)}catch{data={error:text||"La requête a échoué."}}if(!response.ok)throw new Error(data.error||"La requête a échoué.");return data;};
+    const sendPart=async(params:Record<string,string>,chunk:Blob)=>{const query=new URLSearchParams({action:"upload_activity_part",...params}),response=await fetch(`/api/portal?${query}`,{method:"POST",headers:{"Content-Type":"application/octet-stream","x-csrf-token":portal.csrfToken||""},body:chunk}),text=await response.text();let data:any={};try{data=JSON.parse(text)}catch{data={error:text||"La requête a échoué."}}if(!response.ok)throw new Error(data.error||"La requête a échoué.");return data;};
     let init:any=null;
     try{
       setUploading(true);setUploadError("");setProgress(0);
       init=await call({action:"init_activity_upload",...metadata});
-      const chunkSize=5*1024*1024, parts:Array<{partNumber:number;etag:string}>=[];
+      const chunkSize=512*1024, parts:Array<{partNumber:number;etag:string}>=[];
       for(let offset=0,partNumber=1;offset<file.size;offset+=chunkSize,partNumber++){
-        const partForm=new FormData();partForm.set("action","upload_activity_part");partForm.set("key",init.key);partForm.set("uploadId",init.uploadId);partForm.set("partNumber",String(partNumber));partForm.set("chunk",file.slice(offset,Math.min(offset+chunkSize,file.size)),file.name);
-        const part=await call(partForm);parts.push({partNumber:part.partNumber,etag:part.etag});setProgress(Math.round(Math.min(offset+chunkSize,file.size)/file.size*100));
+        const part=await sendPart({key:init.key,uploadId:init.uploadId,partNumber:String(partNumber)},file.slice(offset,Math.min(offset+chunkSize,file.size)));parts.push({partNumber:part.partNumber,etag:part.etag});setProgress(Math.round(Math.min(offset+chunkSize,file.size)/file.size*100));
       }
       await call({action:"complete_activity_upload",...metadata,activityId:init.activityId,key:init.key,uploadId:init.uploadId,parts});form.reset();window.location.reload();
     }catch(error){setUploadError(error instanceof Error?error.message:"La requête a échoué.");if(init)call({action:"abort_activity_upload",key:init.key,uploadId:init.uploadId}).catch(()=>{});}

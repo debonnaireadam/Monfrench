@@ -1,8 +1,11 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 type Portal = { authenticated:boolean; setupRequired?:boolean; turnstileSiteKey?:string|null; csrfToken?:string; user?:{id:string;display_name:string;role:"teacher"|"student";must_change_password:number}; students?:any[];activities?:any[];assignments?:any[];submissions?:any[] };
+type ActivityUploadMetadata = { title:string;category:string;description:string;instructions:string;fileName:string;contentType:string;fileSize:number };
+type GlassbookExport = { title:string;fileName:string;contentType:string;blob:Blob };
+type PendingGlassbookExport = { id:string;resolve:(value:GlassbookExport)=>void;reject:(reason:Error)=>void };
 
 export default function Home(){
   const [portal,setPortal]=useState<Portal|null>(null),[error,setError]=useState(""),[busy,setBusy]=useState(false),[tab,setTab]=useState("home");
@@ -12,7 +15,7 @@ export default function Home(){
   if(!portal)return <main className="welcome"><div className="welcome-copy"><p className="eyebrow">MonFrench</p><h1>Préparation de votre espace…</h1></div></main>;
   if(!portal.authenticated)return <Login setup={!!portal.setupRequired} error={error} busy={busy} onSend={send}/>;
   if(portal.user?.must_change_password)return <PasswordChange error={error} busy={busy} onSend={send}/>;
-  return <main className="site-shell"><header className="preview-bar"><strong className="brand brand-small">MonFrench<span>.</span></strong><p><strong>{portal.user?.display_name}</strong><span>{portal.user?.role==="teacher"?"Espace enseignant":"Espace élève"}</span></p><button className="text-button" onClick={()=>send({action:"logout"})}>Se déconnecter</button></header>{error&&<div className="toast">{error}</div>}{portal.user?.role==="teacher"?<Teacher portal={portal} tab={tab} setTab={setTab} send={send} busy={busy}/>:<Student portal={portal} send={send} busy={busy}/>}</main>;
+  return <main className="site-shell"><header className="preview-bar"><strong className="brand brand-small">MonFrench<span>.</span></strong><p><strong>{portal.user?.display_name}</strong><span>{portal.user?.role==="teacher"?"Espace enseignant":"Espace élève"}</span></p><button className="text-button" onClick={()=>send({action:"logout"})}>Se déconnecter</button></header>{error&&<div className="toast">{error}</div>}{portal.user?.role==="teacher"?<Teacher portal={portal} tab={tab} setTab={setTab} send={send} busy={busy} refresh={load}/>:<Student portal={portal} send={send} busy={busy}/>}</main>;
 }
 
 function Login({setup,error,busy,onSend}:{setup:boolean;error:string;busy:boolean;onSend:(x:Record<string,unknown>)=>Promise<boolean>}){
@@ -22,29 +25,70 @@ function Login({setup,error,busy,onSend}:{setup:boolean;error:string;busy:boolea
 
 function PasswordChange({error,busy,onSend}:{error:string;busy:boolean;onSend:(x:Record<string,unknown>)=>Promise<boolean>}){return <main className="welcome"><section className="welcome-panel"><p className="eyebrow">Sécurité du compte</p><h2>Choisissez votre mot de passe</h2><p>Votre mot de passe temporaire doit être remplacé avant de continuer.</p>{error&&<p className="form-error">{error}</p>}<form className="login-form" onSubmit={e=>{e.preventDefault();onSend({action:"change_password",password:new FormData(e.currentTarget).get("password")});}}><label>Nouveau mot de passe<input name="password" type="password" minLength={10} required/></label><button className="primary-button" disabled={busy}>Enregistrer</button></form></section></main>}
 
-function Teacher({portal,tab,setTab,send,busy}:{portal:Portal;tab:string;setTab:(x:string)=>void;send:(x:any)=>Promise<boolean>;busy:boolean}){
-  const tabs=["home","students","activities","assignments","corrections"];
-  return <div className="teacher-layout"><aside className="teacher-sidebar"><div><p className="sidebar-label">Espace enseignant</p><nav>{tabs.map(x=><button key={x} className={tab===x?"active":""} onClick={()=>setTab(x)}>{({home:"Vue d’ensemble",students:"Élèves",activities:"Activités",assignments:"Devoirs",corrections:"Corrections"} as any)[x]}</button>)}</nav></div></aside><section className="teacher-content">{tab==="home"&&<><header className="teacher-page-header"><div><p className="eyebrow">Votre portail privé</p><h1>Bonjour, {portal.user?.display_name}</h1><p>Créez vos élèves, ajoutez vos activités et distribuez les devoirs.</p></div></header><div className="stat-grid"><article><strong>{portal.students?.length||0}</strong><span>élèves</span></article><article><strong>{portal.activities?.length||0}</strong><span>activités</span></article><article><strong>{portal.assignments?.length||0}</strong><span>devoirs</span></article><article><strong>{portal.submissions?.filter(x=>!x.corrected_at).length||0}</strong><span>à corriger</span></article></div></>}{tab==="students"&&<Students portal={portal} send={send} busy={busy}/>} {tab==="activities"&&<Activities portal={portal} send={send} busy={busy}/>} {tab==="assignments"&&<Assignments portal={portal} send={send} busy={busy}/>} {tab==="corrections"&&<Corrections portal={portal} send={send} busy={busy}/>}</section></div>;
+function Teacher({portal,tab,setTab,send,busy,refresh}:{portal:Portal;tab:string;setTab:(x:string)=>void;send:(x:any)=>Promise<boolean>;busy:boolean;refresh:()=>Promise<void>}){
+  const tabs=["home","apps","students","activities","assignments","corrections"];
+  return <div className="teacher-layout"><aside className="teacher-sidebar"><div><p className="sidebar-label">Espace enseignant</p><nav>{tabs.map(x=><button key={x} className={tab===x?"active":""} onClick={()=>setTab(x)}>{({home:"Vue d’ensemble",apps:"Applications",students:"Élèves",activities:"Activités",assignments:"Devoirs",corrections:"Corrections"} as any)[x]}</button>)}</nav></div></aside><section className="teacher-content">{tab==="home"&&<><header className="teacher-page-header"><div><p className="eyebrow">Votre portail privé</p><h1>Bonjour, {portal.user?.display_name}</h1><p>Créez vos élèves, ajoutez vos activités et distribuez les devoirs.</p></div></header><div className="stat-grid"><article><strong>{portal.students?.length||0}</strong><span>élèves</span></article><article><strong>{portal.activities?.length||0}</strong><span>activités</span></article><article><strong>{portal.assignments?.length||0}</strong><span>devoirs</span></article><article><strong>{portal.submissions?.filter(x=>!x.corrected_at).length||0}</strong><span>à corriger</span></article></div></>}{tab==="apps"&&<TeacherApps portal={portal} refresh={refresh}/>} {tab==="students"&&<Students portal={portal} send={send} busy={busy}/>} {tab==="activities"&&<Activities portal={portal} send={send} busy={busy} refresh={refresh}/>} {tab==="assignments"&&<Assignments portal={portal} send={send} busy={busy}/>} {tab==="corrections"&&<Corrections portal={portal} send={send} busy={busy}/>}</section></div>;
 }
 
 function Students({portal,send,busy}:{portal:Portal;send:(x:any)=>Promise<boolean>;busy:boolean}){return <><header className="teacher-page-header"><div><p className="eyebrow">Comptes privés</p><h1>Élèves</h1><p>Créez un identifiant et un mot de passe temporaire individuel.</p></div></header><form className="teacher-panel form-grid" onSubmit={async e=>{e.preventDefault();const f=new FormData(e.currentTarget);if(await send({action:"create_student",displayName:f.get("displayName"),username:f.get("username"),password:f.get("password")}))e.currentTarget.reset();}}><label>Nom de l’élève<input name="displayName" required/></label><label>Identifiant<input name="username" pattern="[a-z0-9._-]{3,40}" required/></label><label>Mot de passe temporaire<input name="password" minLength={8} required/></label><button className="primary-button" disabled={busy}>Ajouter l’élève</button></form><section className="student-admin-grid">{portal.students?.map(s=><article key={s.id}><div className="student-card-header"><span className="student-avatar large">{s.display_name[0]}</span><div><h2>{s.display_name}</h2><p>@{s.username}</p></div></div><span className="status">{s.must_change_password?"Mot de passe temporaire":"Compte activé"}</span></article>)}</section></>}
 
-function Activities({portal,send,busy}:{portal:Portal;send:(x:any)=>Promise<boolean>;busy:boolean}){
+async function uploadActivityFile(portal:Portal,metadata:ActivityUploadMetadata,file:Blob,onProgress:(value:number)=>void){
+  const post=async(body:Record<string,unknown>)=>{const response=await fetch("/api/portal",{method:"POST",headers:{"Content-Type":"application/json","x-csrf-token":portal.csrfToken||""},body:JSON.stringify(body)}),text=await response.text();let data:any={};try{data=JSON.parse(text)}catch{data={error:text||"La requête a échoué."}}if(!response.ok)throw new Error(data.error||"La requête a échoué.");return data;};
+  const sendPart=async(params:Record<string,string>,chunk:Blob)=>{const query=new URLSearchParams({action:"upload_activity_part",...params}),response=await fetch(`/api/portal?${query}`,{method:"POST",headers:{"Content-Type":"application/octet-stream","x-csrf-token":portal.csrfToken||""},body:chunk}),text=await response.text();let data:any={};try{data=JSON.parse(text)}catch{data={error:text||"La requête a échoué."}}if(!response.ok)throw new Error(data.error||"La requête a échoué.");return data;};
+  let init:any=null;
+  try{
+    onProgress(0);init=await post({action:"init_activity_upload",...metadata});
+    const chunkSize=512*1024,parts:Array<{partNumber:number;etag:string}>=[];
+    for(let offset=0,partNumber=1;offset<file.size;offset+=chunkSize,partNumber++){
+      const part=await sendPart({key:init.key,uploadId:init.uploadId,partNumber:String(partNumber)},file.slice(offset,Math.min(offset+chunkSize,file.size)));parts.push({partNumber:part.partNumber,etag:part.etag});onProgress(Math.round(Math.min(offset+chunkSize,file.size)/file.size*100));
+    }
+    await post({action:"complete_activity_upload",...metadata,activityId:init.activityId,key:init.key,uploadId:init.uploadId,parts});return String(init.activityId);
+  }catch(error){if(init)post({action:"abort_activity_upload",key:init.key,uploadId:init.uploadId}).catch(()=>{});throw error;}
+}
+
+function TeacherApps({portal,refresh}:{portal:Portal;refresh:()=>Promise<void>}){
+  const frameRef=useRef<HTMLIFrameElement>(null),portRef=useRef<MessagePort|null>(null),pendingRef=useRef<PendingGlassbookExport|null>(null),[ready,setReady]=useState(false),[saving,setSaving]=useState(false),[progress,setProgress]=useState(0),[status,setStatus]=useState("Chargez votre PDF et vos pistes audio dans Glassbook."),[saveError,setSaveError]=useState("");
+  useEffect(()=>()=>{portRef.current?.close();pendingRef.current?.reject(new Error("Glassbook a été fermé."));pendingRef.current=null;},[]);
+  const connectGlassbook=()=>{
+    setReady(false);portRef.current?.close();const target=frameRef.current?.contentWindow;if(!target)return;
+    const channel=new MessageChannel();
+    channel.port1.onmessage=(event)=>{
+      const data=event.data||{},pending=pendingRef.current;
+      if(data.type==="monfrench:glassbook-ready"){setReady(true);setStatus("Glassbook est prêt. Chargez votre PDF et vos pistes audio.");return;}
+      if(!pending||String(data.requestId||"")!==pending.id)return;
+      if(data.type==="monfrench:glassbook-progress"){setStatus(`Glassbook : ${String(data.message||"Préparation…")}`);return;}
+      if(data.type==="monfrench:glassbook-error"){pendingRef.current=null;pending.reject(new Error(String(data.message||"Échec de l’export Glassbook.")));return;}
+      if(data.type==="monfrench:glassbook-export"){
+        pendingRef.current=null;const blob=data.blob;
+        if(!(blob instanceof Blob)||!blob.size||blob.size>50*1024*1024||!/^text\/html(?:;|$)/i.test(blob.type)){pending.reject(new Error("La version élève reçue de Glassbook est invalide ou dépasse 50 Mo."));return;}
+        pending.resolve({title:String(data.title||"Activité Glassbook"),fileName:String(data.fileName||"activite-glassbook_étudiant.html"),contentType:"text/html",blob});
+      }
+    };
+    channel.port1.start();portRef.current=channel.port1;target.postMessage({type:"monfrench:glassbook-connect"},"*",[channel.port2]);
+  };
+  const requestStudentExport=()=>new Promise<GlassbookExport>((resolve,reject)=>{
+    if(!portRef.current||!ready){reject(new Error("Glassbook n’est pas encore prêt."));return;}
+    if(pendingRef.current){reject(new Error("Un export Glassbook est déjà en cours."));return;}
+    const id=crypto.randomUUID();pendingRef.current={id,resolve,reject};portRef.current.postMessage({type:"monfrench:glassbook-build",requestId:id});
+  });
+  const saveStudentExport=async(e:FormEvent<HTMLFormElement>)=>{
+    e.preventDefault();const values=new FormData(e.currentTarget);setSaving(true);setProgress(0);setSaveError("");
+    try{
+      setStatus("Glassbook prépare la version élève…");const exported=await requestStudentExport(),sourceTitle=exported.title.trim()||"Activité Glassbook",title=String(values.get("title")||"").trim()||sourceTitle,safeName=exported.fileName.replace(/[<>:"/\\|?*\u0000-\u001F]/g,"-").trim()||"activite-glassbook_étudiant.html";
+      await uploadActivityFile(portal,{title,category:String(values.get("category")||"Écoute"),description:String(values.get("description")||""),instructions:String(values.get("instructions")||""),fileName:safeName,contentType:exported.contentType,fileSize:exported.blob.size},exported.blob,value=>{setProgress(value);setStatus(`Enregistrement dans la bibliothèque… ${value}%`);});
+      await refresh();setStatus(`« ${title} » a été ajouté à la bibliothèque. Vous pouvez maintenant l’assigner à vos élèves.`);
+    }catch(error){setSaveError(error instanceof Error?error.message:"Impossible d’enregistrer la version élève.");setStatus("La version élève n’a pas été enregistrée.");}
+    finally{setSaving(false);}
+  };
+  return <><header className="teacher-page-header"><div><p className="eyebrow">Outils de création</p><h1>Applications</h1><p>Créez une activité dans Glassbook, puis enregistrez directement sa version élève dans votre bibliothèque privée.</p></div></header><section className="glassbook-workspace"><form className="teacher-panel form-grid glassbook-save-panel" onSubmit={saveStudentExport}><div className="full-width section-heading-row"><div><span className="category">Glassbook</span><h2>Version élève</h2><p>Le titre peut rester vide : le nom du PDF sera utilisé automatiquement.</p></div><a className="secondary-button" href="/api/teacher-apps/glassbook" target="_blank" rel="noopener noreferrer">Ouvrir en plein écran</a></div><label>Titre dans la bibliothèque<input name="title" placeholder="Nom du PDF par défaut"/></label><label>Type<select name="category" defaultValue="Écoute"><option>Grammaire</option><option>Conjugaison</option><option>Lecture</option><option>Écoute</option><option>Écriture</option></select></label><label className="full-width">Description<textarea name="description" rows={2} defaultValue="Activité interactive créée avec Glassbook."/></label><label className="full-width">Consignes<textarea name="instructions" rows={2} defaultValue="Consultez le document et écoutez les extraits associés."/></label>{saveError&&<p className="form-error full-width">{saveError}</p>}<p className="glassbook-status full-width" aria-live="polite">{status}</p><button className="primary-button full-width" disabled={!ready||saving}>{saving?`Enregistrement… ${progress}%`:"Créer et enregistrer la version élève"}</button></form><div className="glassbook-frame-shell"><div className="glassbook-frame-bar"><strong>Glassbook 2 — enseignant</strong><span>{ready?"Prêt":"Chargement…"}</span></div><iframe ref={frameRef} className="glassbook-frame" src="/api/teacher-apps/glassbook" title="Glassbook 2 — application enseignant" sandbox="allow-scripts allow-popups allow-downloads allow-forms allow-modals" onLoad={connectGlassbook}/></div></section></>;
+}
+
+function Activities({portal,send,busy,refresh}:{portal:Portal;send:(x:any)=>Promise<boolean>;busy:boolean;refresh:()=>Promise<void>}){
   const [uploading,setUploading]=useState(false),[progress,setProgress]=useState(0),[uploadError,setUploadError]=useState("");
   const multipart=async(form:HTMLFormElement,file:File)=>{
-    const values=new FormData(form), metadata={title:String(values.get("title")||""),category:String(values.get("category")||""),description:String(values.get("description")||""),instructions:String(values.get("instructions")||""),fileName:file.name,contentType:file.type||"application/octet-stream",fileSize:file.size};
-    const call=async(body:Record<string,unknown>|FormData)=>{const isForm=body instanceof FormData;const response=await fetch("/api/portal",{method:"POST",headers:{...(isForm?{}:{"Content-Type":"application/json"}),"x-csrf-token":portal.csrfToken||""},body:isForm?body:JSON.stringify(body)});const text=await response.text();let data:any={};try{data=JSON.parse(text)}catch{data={error:text||"La requête a échoué."}}if(!response.ok)throw new Error(data.error||"La requête a échoué.");return data;};
-    const sendPart=async(params:Record<string,string>,chunk:Blob)=>{const query=new URLSearchParams({action:"upload_activity_part",...params}),response=await fetch(`/api/portal?${query}`,{method:"POST",headers:{"Content-Type":"application/octet-stream","x-csrf-token":portal.csrfToken||""},body:chunk}),text=await response.text();let data:any={};try{data=JSON.parse(text)}catch{data={error:text||"La requête a échoué."}}if(!response.ok)throw new Error(data.error||"La requête a échoué.");return data;};
-    let init:any=null;
-    try{
-      setUploading(true);setUploadError("");setProgress(0);
-      init=await call({action:"init_activity_upload",...metadata});
-      const chunkSize=512*1024, parts:Array<{partNumber:number;etag:string}>=[];
-      for(let offset=0,partNumber=1;offset<file.size;offset+=chunkSize,partNumber++){
-        const part=await sendPart({key:init.key,uploadId:init.uploadId,partNumber:String(partNumber)},file.slice(offset,Math.min(offset+chunkSize,file.size)));parts.push({partNumber:part.partNumber,etag:part.etag});setProgress(Math.round(Math.min(offset+chunkSize,file.size)/file.size*100));
-      }
-      await call({action:"complete_activity_upload",...metadata,activityId:init.activityId,key:init.key,uploadId:init.uploadId,parts});form.reset();window.location.reload();
-    }catch(error){setUploadError(error instanceof Error?error.message:"La requête a échoué.");if(init)call({action:"abort_activity_upload",key:init.key,uploadId:init.uploadId}).catch(()=>{});}
+    const values=new FormData(form),metadata:ActivityUploadMetadata={title:String(values.get("title")||""),category:String(values.get("category")||""),description:String(values.get("description")||""),instructions:String(values.get("instructions")||""),fileName:file.name,contentType:file.type||"application/octet-stream",fileSize:file.size};
+    try{setUploading(true);setUploadError("");setProgress(0);await uploadActivityFile(portal,metadata,file,setProgress);form.reset();await refresh();}
+    catch(error){setUploadError(error instanceof Error?error.message:"La requête a échoué.");}
     finally{setUploading(false);}
   };
   return <><header className="teacher-page-header"><div><p className="eyebrow">Bibliothèque privée</p><h1>Activités</h1><p>Ajoutez un fichier HTML, PDF, audio, ou un lien vers une application.</p></div></header><form className="teacher-panel form-grid" onSubmit={async e=>{e.preventDefault();const f=new FormData(e.currentTarget),file=f.get("file");if(file instanceof File&&file.size){await multipart(e.currentTarget,file);}else{f.set("action","create_activity");if(await send(f))e.currentTarget.reset();}}}><label>Titre<input name="title" required/></label><label>Type<select name="category"><option>Grammaire</option><option>Conjugaison</option><option>Lecture</option><option>Écoute</option><option>Écriture</option></select></label><label className="full-width">Description<textarea name="description" rows={2}/></label><label className="full-width">Consignes<textarea name="instructions" rows={2}/></label><label>Fichier<input name="file" type="file" accept=".html,.htm,.pdf,.mp3,.m4a,.wav,.ogg,.zip,.doc,.docx"/></label><label>Lien externe<input name="externalUrl" type="url" placeholder="https://…"/></label>{uploadError&&<p className="form-error full-width">{uploadError}</p>}{uploading&&<p className="full-width" role="status">Téléversement en cours… {progress}%</p>}<button className="primary-button" disabled={busy||uploading}>{uploading?`Téléversement… ${progress}%`:"Ajouter à la bibliothèque"}</button></form><section className="library-grid">{portal.activities?.map(a=><article className="library-card" key={a.id}><span className="category">{a.category}</span><h2>{a.title}</h2><p>{a.description}</p><small>{a.original_name||a.external_url||"Activité d’écriture"}</small>{a.original_name&&<a className="secondary-button" href={`/api/file?kind=activity&id=${a.id}`} target="_blank">Aperçu</a>}</article>)}</section></>

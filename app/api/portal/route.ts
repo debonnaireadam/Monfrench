@@ -145,6 +145,32 @@ export async function POST(request: Request) {
       if (!r2Key && !externalUrl && category !== "Écriture") return json({ error: "Ajoutez un fichier ou un lien." }, 400);
       await env.DB.prepare(`INSERT INTO activities(id,title,category,description,instructions,r2_key,original_name,content_type,external_url,created_by,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)`).bind(activityId,title,category,String(get("description")??""),String(get("instructions")??""),r2Key,originalName,contentType,externalUrl,current.id,now()).run(); return json({ ok:true });
     }
+    if (action === "init_activity_upload") {
+      const title=String(get("title")??"").trim(), category=String(get("category")??""), fileName=String(get("fileName")??"activity.html"), contentType=String(get("contentType")??"application/octet-stream"), fileSize=Number(get("fileSize")??0);
+      if(!title||!["Grammaire","Conjugaison","Lecture","Écoute","Écriture"].includes(category))return json({error:"Titre ou catégorie invalide."},400);
+      if(!Number.isFinite(fileSize)||fileSize<1||fileSize>50*1024*1024)return json({error:"Le fichier doit faire moins de 50 Mo."},413);
+      const activityId=id(), safeName=fileName.replace(/[^a-zA-Z0-9._-]/g,"_"), key=`activities/${current.id}/${activityId}/${safeName}`;
+      const upload=await env.FILES.createMultipartUpload(key,{httpMetadata:{contentType}});
+      return json({ok:true,activityId,key,uploadId:upload.uploadId});
+    }
+    if (action === "upload_activity_part") {
+      const key=String(get("key")??""), uploadId=String(get("uploadId")??""), partNumber=Number(get("partNumber")??0), chunk=get("chunk");
+      if(!key.startsWith(`activities/${current.id}/`)||!uploadId||!Number.isInteger(partNumber)||partNumber<1||!(chunk instanceof File)||!chunk.size)return json({error:"Partie de fichier invalide."},400);
+      const part=await env.FILES.resumeMultipartUpload(key,uploadId).uploadPart(partNumber,chunk.stream());
+      return json({ok:true,partNumber:part.partNumber,etag:part.etag});
+    }
+    if (action === "complete_activity_upload") {
+      const title=String(get("title")??"").trim(), category=String(get("category")??""), activityId=String(get("activityId")??""), key=String(get("key")??""), uploadId=String(get("uploadId")??""), originalName=String(get("fileName")??"activity.html"), contentType=String(get("contentType")??"application/octet-stream"), parts=get("parts") as Array<{partNumber:number;etag:string}>;
+      if(!title||!["Grammaire","Conjugaison","Lecture","Écoute","Écriture"].includes(category)||!activityId||!key.startsWith(`activities/${current.id}/${activityId}/`)||!uploadId||!Array.isArray(parts)||!parts.length)return json({error:"Téléversement incomplet."},400);
+      await env.FILES.resumeMultipartUpload(key,uploadId).complete(parts);
+      await env.DB.prepare(`INSERT INTO activities(id,title,category,description,instructions,r2_key,original_name,content_type,external_url,created_by,created_at) VALUES(?,?,?,?,?,?,?,?,NULL,?,?)`).bind(activityId,title,category,String(get("description")??""),String(get("instructions")??""),key,originalName,contentType,current.id,now()).run();
+      return json({ok:true,activityId});
+    }
+    if (action === "abort_activity_upload") {
+      const key=String(get("key")??""), uploadId=String(get("uploadId")??"");
+      if(key.startsWith(`activities/${current.id}/`)&&uploadId)await env.FILES.resumeMultipartUpload(key,uploadId).abort();
+      return json({ok:true});
+    }
     if (action === "assign") {
       const activityId=String(get("activityId")??""); const studentIds=Array.isArray(get("studentIds"))?get("studentIds") as string[]:[]; if(!activityId||!studentIds.length)return json({error:"Choisissez une activité et au moins un élève."},400);
       const assignmentId=id(); await env.DB.prepare(`INSERT INTO assignments(id,activity_id,due_at,instructions,published_at,created_by) VALUES(?,?,?,?,?,?)`).bind(assignmentId,activityId,String(get("dueAt")??"")||null,String(get("instructions")??""),now(),current.id).run();

@@ -26,3 +26,13 @@ test("private files require ownership or assignment access", async () => {
   assert.match(route, /student_id=\?/);
   assert.match(route, /Cache-Control":"private, no-store/);
 });
+
+test("large activity files use authenticated R2 multipart uploads", async () => {
+  const route = await readFile("app/api/portal/route.ts", "utf8");
+  const page = await readFile("app/page.tsx", "utf8");
+  assert.match(route, /createMultipartUpload/);
+  assert.match(route, /resumeMultipartUpload/);
+  assert.match(route, /uploadPart/);
+  assert.match(route, /complete\(parts\)/);
+  assert.match(page, /chunkSize=5\*1024\*1024/);
+});

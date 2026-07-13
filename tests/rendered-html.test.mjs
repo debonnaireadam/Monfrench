@@ -24,6 +24,7 @@ test("private files require ownership or assignment access", async () => {
   const route = await readFile("app/api/file/route.ts", "utf8");
   assert.match(route, /assignment_students/);
   assert.match(route, /student_id=\?/);
+  assert.match(route, /slice\("monfrench_session="\.length\)/);
   assert.match(route, /Cache-Control":"private, no-store/);
 });
 

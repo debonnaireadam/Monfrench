@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 
 const hex = (b:Uint8Array)=>[...b].map(n=>n.toString(16).padStart(2,"0")).join("");
 const hash=async(v:string)=>hex(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v))));
-const cookie=(r:Request)=>r.headers.get("cookie")?.split(";").map(x=>x.trim()).find(x=>x.startsWith("monfrench_session="))?.slice(20);
+const cookie=(r:Request)=>r.headers.get("cookie")?.split(";").map(x=>x.trim()).find(x=>x.startsWith("monfrench_session="))?.slice("monfrench_session=".length);
 
 export async function GET(request:Request){
   const token=cookie(request); if(!token)return new Response("Non autorisé",{status:401});

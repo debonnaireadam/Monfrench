@@ -1,18 +1,24 @@
-# MonFrench.com
+# MonFrench
 
-MonFrench.com is an interactive online learning platform designed to make learning French clear, practical, and enjoyable. It helps learners develop confidence in speaking, listening, reading, and writing through structured lessons, real-life examples, and engaging activities.
+MonFrench is a private, teacher-managed French activity portal. Students sign in to see only the activities assigned to them, complete their work, and return it to their teacher.
 
-## Planned features
+The visual identity follows an academic Parisian direction built around Sorbonne navy, warm cream, gold accents, Cormorant Garamond headings, and a fleur-de-lis emblem.
 
-- Structured lessons in grammar, vocabulary, pronunciation, reading, and writing
-- Interactive exercises and quizzes with immediate feedback
-- Listening and pronunciation practice
-- Real-life conversation scenarios
-- Personalized learning paths for different levels and goals
-- Progress tracking and achievements
-- Vocabulary review tools and flashcards
-- Responsive access from computers, tablets, and phones
+## Main capabilities
 
-## Status
+- Private teacher and student accounts
+- Teacher-managed students, activities, assignments, and corrections
+- Student views for work to complete and work sent to the teacher
+- Protected activity files and large uploads
+- Glassbook activity creation and export
+- Responsive interface for computers, tablets, and phones
 
-MonFrench.com is currently in development.
+## Development
+
+Requires Node.js 22.13 or newer.
+
+```bash
+npm install
+npm run dev
+npm run build
+```

@@ -39,12 +39,14 @@ export async function GET(request: Request) {
   if (!object) return new Response("Fichier introuvable", { status: 404 });
   const contentType = row.content_type || object.httpMetadata?.contentType || "application/octet-stream";
   const html = /text\/html|application\/xhtml\+xml/i.test(contentType) || /\.html?$/i.test(row.original_name ?? "");
-  const disposition = html || url.searchParams.get("download") === "1" ? "attachment" : "inline";
+  const disposition = url.searchParams.get("download") === "1" ? "attachment" : "inline";
   return new Response(object.body, { headers: {
     "Content-Type": contentType,
     "Content-Disposition": `${disposition}; filename*=UTF-8''${encodeURIComponent(row.original_name || "fichier")}`,
     "Cache-Control": "private, no-store",
     "X-Content-Type-Options": "nosniff",
-    "Content-Security-Policy": "sandbox",
+    "Content-Security-Policy": html
+      ? "default-src 'none'; script-src 'unsafe-inline' blob:; worker-src blob:; child-src blob:; style-src 'unsafe-inline'; img-src data: blob:; media-src data: blob:; font-src data: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'; sandbox allow-scripts allow-popups allow-downloads allow-forms allow-modals"
+      : "sandbox",
   } });
 }

@@ -24,7 +24,7 @@ test("build contains the portal and protected API routes", async () => {
   assert.match(page, /Envoyer aux élèves/);
   assert.match(page, /Corbeille/);
   assert.match(page, /Corrections/);
-  assert.match(page, />Télécharger</);
+  assert.match(page, /Faire l’activité en ligne/);
 });
 
 test("authentication uses keyed password hashes, server sessions and CSRF", async () => {
@@ -46,7 +46,8 @@ test("private files require ownership or assignment access", async () => {
   assert.match(route, /student_id=\?/);
   assert.match(route, /slice\("monfrench_session="\.length\)/);
   assert.match(route, /"Cache-Control": "private, no-store"/);
-  assert.match(route, /const disposition = html.*"attachment"/);
+  assert.match(route, /const disposition = url\.searchParams\.get\("download"\).*"inline"/);
+  assert.match(route, /sandbox allow-scripts allow-popups allow-downloads allow-forms allow-modals/);
 });
 
 test("large activity files use authenticated staged R2 uploads", async () => {
@@ -150,11 +151,26 @@ test("Glassbook student exports can be saved into the activity library", async (
   assert.match(page, /sandbox="allow-scripts allow-popups allow-downloads allow-forms allow-modals"/);
   assert.match(page, /monfrench:glassbook-build/);
   assert.match(page, /uploadActivityFile\(portal/);
+  assert.match(page, /runtimeKind:"glassbook"/);
+  assert.match(page, /monfrench:activity-connect/);
+  assert.match(page, /build-submission-pdf/);
+  assert.match(page, /save_progress/);
   assert.match(page, /Créer et enregistrer la version élève/);
   assert.match(route, /user\.role !== "owner" && user\.role !== "teacher"/);
   assert.match(route, /Content-Security-Policy/);
   assert.match(route, /Cache-Control": "private, no-store/);
   assert.match(glassbookSource, /monfrench:glassbook-connect/);
   assert.match(glassbookSource, /monfrench:glassbook-export/);
-  assert.equal(createHash("sha256").update(glassbookSource).digest("hex").toUpperCase(), "19169281939D544C63EC067A8B272E813812FDF6D0A894FDD5D2D08ED98C947E");
+  assert.match(glassbookSource, /monfrench:teacher-connect/);
+  assert.match(glassbookSource, /export-student-html/);
+  assert.equal(createHash("sha256").update(glassbookSource).digest("hex").toUpperCase(), "A5E57F98DEB749DEF4067DDF5AE25785707CC739B0CBC8FBECCDE832441CBFB8");
+});
+
+test("Glassbook student work is saved and submitted through the portal", async () => {
+  const route = await readFile("app/api/portal/route.ts", "utf8");
+  assert.match(route, /\["open_assignment","get_progress","save_progress","submit"\]/);
+  assert.match(route, /INSERT INTO student_work/);
+  assert.match(route, /glassbook\.student-state/);
+  assert.match(route, /onlineCapable=runtimeKind==="glassbook"\?1:0/);
+  assert.match(route, /UPDATE student_work SET status='submitted'/);
 });

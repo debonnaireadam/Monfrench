@@ -4,6 +4,20 @@ import { createHash } from "node:crypto";
 import { readFile, stat } from "node:fs/promises";
 import { DatabaseSync } from "node:sqlite";
 
+async function applyMigration(db, path) {
+  const sql = await readFile(path, "utf8");
+  db.exec("BEGIN");
+  try {
+    for (const statement of sql.split("--> statement-breakpoint")) {
+      if (statement.trim()) db.exec(statement);
+    }
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+}
+
 test("build contains the portal and protected API routes", async () => {
   await stat("dist/server/index.js");
   const page = await readFile("app/page.tsx", "utf8");
@@ -82,13 +96,7 @@ test("login protection and client-side URL boundaries are wired", async () => {
 test("the additive migration preserves existing assignments and submissions", async () => {
   const db = new DatabaseSync(":memory:");
   db.exec("PRAGMA foreign_keys=ON");
-  const applyMigration = async (path) => {
-    const sql = await readFile(path, "utf8");
-    for (const statement of sql.split("--> statement-breakpoint")) {
-      if (statement.trim()) db.exec(statement);
-    }
-  };
-  await applyMigration("drizzle/0000_nervous_wrecker.sql");
+  await applyMigration(db, "drizzle/0000_nervous_wrecker.sql");
   db.exec(`
     INSERT INTO users(id,username,display_name,role,password_hash,password_salt,active,must_change_password,created_at)
       VALUES ('teacher-1','debonnaire','Debonnaire','teacher','hash','salt',1,0,'2026-01-01T00:00:00Z'),
@@ -102,16 +110,32 @@ test("the additive migration preserves existing assignments and submissions", as
     INSERT INTO submissions(id,assignment_id,student_id,writing,r2_key,original_name,content_type,submitted_at)
       VALUES ('submission-1','assignment-1','student-1','Réponse','submissions/s.pdf','s.pdf','application/pdf','2026-01-05T00:00:00Z');
   `);
-  await applyMigration("drizzle/0001_wet_purple_man.sql");
-  await applyMigration("drizzle/0002_known_pandemic.sql");
+  await applyMigration(db, "drizzle/0001_wet_purple_man.sql");
+  await applyMigration(db, "drizzle/0002_known_pandemic.sql");
+  await applyMigration(db, "drizzle/0003_protected_debonnaire.sql");
   assert.equal(db.prepare("SELECT COUNT(*) count FROM assignments").get().count, 1);
   assert.equal(db.prepare("SELECT COUNT(*) count FROM assignment_students").get().count, 1);
   assert.equal(db.prepare("SELECT COUNT(*) count FROM submissions").get().count, 1);
-  assert.equal(db.prepare("SELECT role FROM users WHERE username='debonnaire'").get().role, "teacher");
+  assert.equal(db.prepare("SELECT role FROM users WHERE username='debonnaire'").get().role, "owner");
   assert.equal(db.prepare("SELECT activity_version_id FROM assignments WHERE id='assignment-1'").get().activity_version_id, "legacy-activity-1");
   assert.equal(db.prepare("SELECT COUNT(*) count FROM teacher_students WHERE student_id='student-1' AND teacher_id='teacher-1'").get().count, 1);
   assert.equal(db.prepare("SELECT COUNT(*) count FROM sqlite_master WHERE type='table' AND name='upload_sessions'").get().count, 1);
+  assert.equal(db.prepare("SELECT COUNT(*) count FROM audit_events WHERE action='promote_owner' AND entity_id='teacher-1'").get().count, 1);
   assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
+  db.close();
+});
+
+test("owner promotion fails closed when the Debonnaire account is absent", async () => {
+  const db = new DatabaseSync(":memory:");
+  db.exec("PRAGMA foreign_keys=ON");
+  await applyMigration(db, "drizzle/0000_nervous_wrecker.sql");
+  db.exec(`INSERT INTO users(id,username,display_name,role,password_hash,password_salt,active,must_change_password,created_at)
+    VALUES ('teacher-2','another-teacher','Another teacher','teacher','hash','salt',1,0,'2026-01-01T00:00:00Z')`);
+  await applyMigration(db, "drizzle/0001_wet_purple_man.sql");
+  await applyMigration(db, "drizzle/0002_known_pandemic.sql");
+  await assert.rejects(() => applyMigration(db, "drizzle/0003_protected_debonnaire.sql"), /CHECK constraint failed/);
+  assert.equal(db.prepare("SELECT role FROM users WHERE id='teacher-2'").get().role, "teacher");
+  assert.equal(db.prepare("SELECT COUNT(*) count FROM sqlite_master WHERE name='monfrench_owner_promotion_guard_20260714'").get().count, 0);
   db.close();
 });
 

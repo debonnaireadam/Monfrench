@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   if (!token) return new Response("Non autorisé", { status: 401 });
   const user = await env.DB.prepare(`SELECT u.role FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.id_hash=? AND s.expires_at>? AND u.active=1`).bind(await hash(token), new Date().toISOString()).first<{ role: string }>();
   if (!user) return new Response("Non autorisé", { status: 401 });
-  if (user.role !== "teacher") return new Response("Réservé à l’enseignant", { status: 403 });
+  if (user.role !== "owner" && user.role !== "teacher") return new Response("Réservé à l’enseignant", { status: 403 });
   return new Response(glassbookHtml, { headers: {
     "Content-Type": "text/html; charset=utf-8",
     "Content-Disposition": "inline; filename=glassbook2_teacher.html",

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MonFrench — Maquette espace élève</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#1C2B4A;        /* Bleu Sorbonne — fond principal */
+    --navy-deep:#141F38;
+    --cream:#FAF6EE;       /* Crème — fond des espaces de contenu */
+    --paper:#FFFFFF;
+    --gold:#C9A227;        /* Or — accent, fleur de lys */
+    --gold-soft:#E7D9A8;
+    --ink:#22283A;         /* Texte principal */
+    --ink-soft:#6B7285;    /* Texte secondaire */
+    --line:#E7E0D2;
+    --green:#2E7D5B;       /* Envoyé ✓ */
+    --green-bg:#EAF4EF;
+    --amber-bg:#FBF3DC;
+    --radius:14px;
+    font-size:16px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:'Inter',system-ui,sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  .serif{font-family:'Cormorant Garamond',Georgia,serif}
+
+  /* ── demo switcher (not part of the design) ── */
+  .demo-bar{
+    position:fixed;top:0;left:0;right:0;z-index:99;
+    display:flex;gap:8px;justify-content:center;padding:10px;
+    background:#111;color:#fff;font-size:13px;align-items:center;
+  }
+  .demo-bar button{
+    background:#333;color:#fff;border:1px solid #555;border-radius:8px;
+    padding:6px 14px;font-size:13px;cursor:pointer;font-family:inherit;
+  }
+  .demo-bar button.active{background:var(--gold);color:#111;border-color:var(--gold)}
+  .screen{display:none;padding-top:46px;min-height:100vh}
+  .screen.visible{display:block}
+
+  /* ═══════════ ÉCRAN 1 : CONNEXION ═══════════ */
+  #login{
+    background:
+      radial-gradient(1200px 600px at 70% -10%, rgba(201,162,39,.10), transparent 60%),
+      var(--navy);
+    display:none;
+  }
+  #login.visible{display:flex;align-items:center;justify-content:center}
+  .login-wrap{width:100%;max-width:400px;padding:32px 20px;text-align:center}
+  .fleur{
+    width:54px;height:54px;margin:0 auto 14px;
+    display:flex;align-items:center;justify-content:center;
+    border:1.5px solid var(--gold);border-radius:50%;
+    color:var(--gold);font-size:26px;
+  }
+  .wordmark{
+    color:#fff;font-size:2.1rem;font-weight:600;letter-spacing:.5px;
+  }
+  .wordmark span{color:var(--gold)}
+  .tagline{
+    color:rgba(255,255,255,.55);font-size:.9rem;margin-top:6px;margin-bottom:34px;
+    font-style:italic;font-family:'Cormorant Garamond',serif;font-size:1.05rem;
+  }
+  .login-card{
+    background:var(--paper);border-radius:var(--radius);
+    padding:28px 26px;box-shadow:0 20px 60px rgba(0,0,0,.35);
+    text-align:left;
+  }
+  .field{margin-bottom:16px}
+  .field label{
+    display:block;font-size:.78rem;font-weight:600;color:var(--ink-soft);
+    text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;
+  }
+  .field input{
+    width:100%;padding:12px 14px;font-size:1rem;font-family:inherit;
+    border:1.5px solid var(--line);border-radius:10px;background:#FCFBF8;
+    outline:none;transition:border-color .15s;
+  }
+  .field input:focus{border-color:var(--gold)}
+  .btn-primary{
+    width:100%;padding:13px;margin-top:6px;
+    background:var(--navy);color:#fff;font-size:1rem;font-weight:600;
+    border:none;border-radius:10px;cursor:pointer;font-family:inherit;
+    transition:background .15s;
+  }
+  .btn-primary:hover{background:var(--navy-deep)}
+  .login-help{
+    margin-top:18px;font-size:.82rem;color:rgba(255,255,255,.45);
+  }
+
+  /* ═══════════ ÉCRAN 2 : ESPACE ÉLÈVE ═══════════ */
+  header.app{
+    background:var(--navy);color:#fff;
+    padding:14px 0;
+  }
+  .container{max-width:760px;margin:0 auto;padding:0 20px}
+  .app-bar{display:flex;align-items:center;justify-content:space-between}
+  .app-brand{display:flex;align-items:center;gap:10px;font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.25rem}
+  .app-brand .mini-fleur{color:var(--gold);font-size:1.1rem}
+  .logout{
+    background:none;border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.85);
+    border-radius:8px;padding:7px 14px;font-size:.82rem;cursor:pointer;font-family:'Inter',sans-serif;
+  }
+  .logout:hover{border-color:var(--gold);color:var(--gold)}
+
+  .greeting{padding:34px 0 8px}
+  .greeting h1{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.9rem;color:var(--ink)}
+  .greeting p{color:var(--ink-soft);font-size:.95rem;margin-top:4px}
+
+  .tabs{
+    display:flex;gap:8px;margin:22px 0 18px;
+  }
+  .tab{
+    flex:1;padding:12px;text-align:center;border-radius:10px;cursor:pointer;
+    font-weight:600;font-size:.95rem;border:1.5px solid var(--line);
+    background:var(--paper);color:var(--ink-soft);font-family:inherit;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .tab .count{
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:22px;height:22px;border-radius:11px;font-size:.78rem;padding:0 6px;
+    background:var(--line);color:var(--ink-soft);
+  }
+  .tab.active{background:var(--navy);border-color:var(--navy);color:#fff}
+  .tab.active .count{background:var(--gold);color:var(--navy-deep)}
+
+  .cards{display:flex;flex-direction:column;gap:12px;padding-bottom:60px}
+  .card{
+    background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;
+  }
+  .card-info h3{font-size:1.02rem;font-weight:600;margin-bottom:4px}
+  .card-info .meta{font-size:.83rem;color:var(--ink-soft);display:flex;gap:10px;flex-wrap:wrap}
+  .chip{
+    font-size:.74rem;font-weight:600;padding:3px 9px;border-radius:99px;
+  }
+  .chip.due{background:var(--amber-bg);color:#8A6D1B}
+  .chip.sent{background:var(--green-bg);color:var(--green)}
+  .btn-go{
+    flex-shrink:0;background:var(--gold);color:var(--navy-deep);border:none;
+    padding:10px 18px;border-radius:9px;font-weight:700;font-size:.88rem;
+    cursor:pointer;font-family:inherit;
+  }
+  .btn-go:hover{filter:brightness(1.05)}
+  .sent-mark{flex-shrink:0;color:var(--green);font-weight:600;font-size:.88rem;display:flex;align-items:center;gap:6px}
+  .empty{
+    text-align:center;color:var(--ink-soft);padding:50px 20px;
+    font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.15rem;
+  }
+  footer.app-foot{
+    text-align:center;padding:26px;color:var(--ink-soft);font-size:.78rem;
+  }
+  footer.app-foot .mini-fleur{color:var(--gold)}
+  @media(max-width:520px){
+    .card{flex-direction:column;align-items:flex-start}
+    .btn-go{width:100%}
+  }
+</style>
+</head>
+<body>
+
+<div class="demo-bar">
+  Maquette —
+  <button id="b1" class="active" onclick="show('login')">1 · Connexion</button>
+  <button id="b2" onclick="show('space')">2 · Espace élève</button>
+</div>
+
+<!-- ═══════════ ÉCRAN 1 : CONNEXION ═══════════ -->
+<section id="login" class="screen visible">
+  <div class="login-wrap">
+    <div class="fleur">⚜</div>
+    <div class="wordmark serif">Mon<span>French</span></div>
+    <div class="tagline">Votre espace de français, simplement.</div>
+    <div class="login-card">
+      <div class="field">
+        <label for="u">Identifiant</label>
+        <input id="u" type="text" autocomplete="username" placeholder="votre identifiant">
+      </div>
+      <div class="field">
+        <label for="p">Mot de passe</label>
+        <input id="p" type="password" autocomplete="current-password" placeholder="••••••••">
+      </div>
+      <button class="btn-primary" onclick="show('space')">Se connecter</button>
+    </div>
+    <div class="login-help">Identifiant oublié ? Contactez votre professeur.</div>
+  </div>
+</section>
+
+<!-- ═══════════ ÉCRAN 2 : ESPACE ÉLÈVE ═══════════ -->
+<section id="space" class="screen">
+  <header class="app">
+    <div class="container app-bar">
+      <div class="app-brand"><span class="mini-fleur">⚜</span> MonFrench</div>
+      <button class="logout" onclick="show('login')">Se déconnecter</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="greeting">
+      <h1 class="serif">Bonjour, Sarah 👋</h1>
+      <p>Vous avez 2 activités à faire.</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" id="t-todo" onclick="tab('todo')">À faire <span class="count">2</span></button>
+      <button class="tab" id="t-done" onclick="tab('done')">Envoyé au professeur <span class="count">3</span></button>
+    </div>
+
+    <div class="cards" id="list-todo">
+      <div class="card">
+        <div class="card-info">
+          <h3>Compréhension écrite — TEF Canada, série 4</h3>
+          <div class="meta"><span class="chip due">À rendre le 16 juillet</span><span>Lecture · 40 min</span></div>
+        </div>
+        <button class="btn-go">Commencer</button>
+      </div>
+      <div class="card">
+        <div class="card-info">
+          <h3>Expression orale — décrire une image</h3>
+          <div class="meta"><span class="chip due">À rendre le 18 juillet</span><span>Oral · 20 min</span></div>
+        </div>
+        <button class="btn-go">Commencer</button>
+      </div>
+    </div>
+
+    <div class="cards" id="list-done" style="display:none">
+      <div class="card">
+        <div class="card-info">
+          <h3>Grammaire — le subjonctif présent</h3>
+          <div class="meta"><span class="chip sent">Envoyé le 10 juillet</span></div>
+        </div>
+        <div class="sent-mark">✓ Envoyé</div>
+      </div>
+      <div class="card">
+        <div class="card-info">
+          <h3>Dictée n° 7 — les accords du participe passé</h3>
+          <div class="meta"><span class="chip sent">Envoyé le 8 juillet</span></div>
+        </div>
+        <div class="sent-mark">✓ Envoyé</div>
+      </div>
+      <div class="card">
+        <div class="card-info">
+          <h3>Compréhension orale — TCF, entraînement 2</h3>
+          <div class="meta"><span class="chip sent">Envoyé le 5 juillet</span></div>
+        </div>
+        <div class="sent-mark">✓ Envoyé</div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="app-foot"><span class="mini-fleur">⚜</span> MonFrench</footer>
+</section>
+
+<script>
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('visible'));
+  document.getElementById(id).classList.add('visible');
+  document.getElementById('b1').classList.toggle('active', id==='login');
+  document.getElementById('b2').classList.toggle('active', id==='space');
+  window.scrollTo(0,0);
+}
+function tab(which){
+  document.getElementById('t-todo').classList.toggle('active', which==='todo');
+  document.getElementById('t-done').classList.toggle('active', which==='done');
+  document.getElementById('list-todo').style.display = which==='todo' ? 'flex':'none';
+  document.getElementById('list-done').style.display = which==='done' ? 'flex':'none';
+}
+</script>
+</body>
+</html>

@@ -7,7 +7,6 @@ type Session = User & { csrf_token: string };
 
 const json = (value: unknown, status = 200, headers?: HeadersInit) => Response.json(value, { status, headers });
 const now = () => new Date().toISOString();
-const sessionCutoff = () => new Date(Date.now() - 12 * 60 * 60_000).toISOString();
 const id = () => crypto.randomUUID();
 const bytesToHex = (bytes: Uint8Array) => [...bytes].map((n) => n.toString(16).padStart(2, "0")).join("");
 const randomToken = () => bytesToHex(crypto.getRandomValues(new Uint8Array(32)));
@@ -35,7 +34,7 @@ function cookie(request: Request, name: string) {
 async function session(request: Request): Promise<Session | null> {
   const token = cookie(request, "monfrench_session");
   if (!token) return null;
-  return (await env.DB.prepare(`SELECT u.id,u.username,u.display_name,u.role,u.must_change_password,s.csrf_token FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.id_hash=? AND s.expires_at>? AND s.created_at>? AND u.active=1`).bind(await sha256(token), now(), sessionCutoff()).first()) as Session | null;
+  return (await env.DB.prepare(`SELECT u.id,u.username,u.display_name,u.role,u.must_change_password,s.csrf_token FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.id_hash=? AND s.expires_at>? AND u.active=1`).bind(await sha256(token), now()).first()) as Session | null;
 }
 
 async function requireSession(request: Request, role?: "teacher" | "student") {
@@ -64,7 +63,6 @@ async function deleteStagedUpload(prefix: string) {
 }
 
 async function dashboard(current: Session) {
-  const safeUser = { display_name: current.display_name, role: current.role, must_change_password: current.must_change_password };
   if (current.role === "teacher") {
     const [students, activities, assignments, submissions] = await Promise.all([
       env.DB.prepare(`SELECT id,username,display_name,active,must_change_password,created_at FROM users WHERE role='student' ORDER BY display_name`).all(),
@@ -72,16 +70,17 @@ async function dashboard(current: Session) {
       env.DB.prepare(`SELECT a.id,a.due_at,a.instructions,a.published_at,ac.title,ac.category,COUNT(ast.student_id) student_count FROM assignments a JOIN activities ac ON ac.id=a.activity_id LEFT JOIN assignment_students ast ON ast.assignment_id=a.id GROUP BY a.id ORDER BY a.published_at DESC`).all(),
       env.DB.prepare(`SELECT s.id,s.assignment_id,s.student_id,s.writing,s.original_name,s.submitted_at,s.feedback,s.corrected_at,u.display_name student_name,ac.title FROM submissions s JOIN users u ON u.id=s.student_id JOIN assignments a ON a.id=s.assignment_id JOIN activities ac ON ac.id=a.activity_id ORDER BY s.submitted_at DESC`).all(),
     ]);
-    return { user: safeUser, students: students.results, activities: activities.results, assignments: assignments.results, submissions: submissions.results };
+    return { user: current, students: students.results, activities: activities.results, assignments: assignments.results, submissions: submissions.results };
   }
-  const assignments = await env.DB.prepare(`SELECT a.id,ac.id activity_id,a.due_at,COALESCE(NULLIF(a.instructions,''),NULLIF(ac.instructions,''),ac.description) instructions,ac.title,ac.category,CASE WHEN ac.r2_key IS NOT NULL THEN 1 ELSE 0 END has_file,ac.external_url,ast.status,s.writing,s.feedback FROM assignment_students ast JOIN assignments a ON a.id=ast.assignment_id JOIN activities ac ON ac.id=a.activity_id LEFT JOIN submissions s ON s.assignment_id=a.id AND s.student_id=ast.student_id WHERE ast.student_id=? ORDER BY a.published_at DESC`).bind(current.id).all();
-  return { user: safeUser, assignments: assignments.results };
+  const assignments = await env.DB.prepare(`SELECT a.id,ac.id activity_id,a.due_at,COALESCE(NULLIF(a.instructions,''),ac.instructions) instructions,ac.title,ac.category,ac.description,ac.original_name,ac.external_url,ast.status,s.writing,s.feedback,s.corrected_at FROM assignment_students ast JOIN assignments a ON a.id=ast.assignment_id JOIN activities ac ON ac.id=a.activity_id LEFT JOIN submissions s ON s.assignment_id=a.id AND s.student_id=ast.student_id WHERE ast.student_id=? ORDER BY a.published_at DESC`).bind(current.id).all();
+  return { user: current, assignments: assignments.results };
 }
 
 export async function GET(request: Request) {
   try {
     const current = await session(request);
-    if (!current) return json({ authenticated: false }, 200, { "Cache-Control": "no-store" });
+    const teachers = await env.DB.prepare(`SELECT COUNT(*) count FROM users WHERE role='teacher'`).first<{ count: number }>();
+    if (!current) return json({ authenticated: false, setupRequired: !teachers?.count, turnstileSiteKey: (env.TURNSTILE_SITE_KEY as string | undefined) ?? null });
     return json({ authenticated: true, csrfToken: current.csrf_token, ...(await dashboard(current)) }, 200, { "Cache-Control": "no-store" });
   } catch (error) { return error instanceof Response ? error : json({ error: "Impossible de charger le portail." }, 500); }
 }
@@ -132,8 +131,8 @@ export async function POST(request: Request) {
       }
       await env.DB.prepare(`DELETE FROM login_attempts WHERE key=?`).bind(key).run();
       const token = randomToken(); const csrf = randomToken();
-      await env.DB.prepare(`INSERT INTO sessions(id_hash,user_id,csrf_token,expires_at,created_at) VALUES(?,?,?,?,?)`).bind(await sha256(token), user.id, csrf, new Date(Date.now()+12*60*60_000).toISOString(), now()).run();
-      return json({ ok: true }, 200, { "Set-Cookie": `monfrench_session=${token}; HttpOnly; Secure; SameSite=Lax; Path=/`, "Cache-Control": "no-store" });
+      await env.DB.prepare(`INSERT INTO sessions(id_hash,user_id,csrf_token,expires_at,created_at) VALUES(?,?,?,?,?)`).bind(await sha256(token), user.id, csrf, new Date(Date.now()+7*86400000).toISOString(), now()).run();
+      return json({ ok: true }, 200, { "Set-Cookie": `monfrench_session=${token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=604800`, "Cache-Control": "no-store" });
     }
 
     if (action === "logout") {

@@ -10,25 +10,20 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     metadataBase,
-    title: "MonFrench — Connexion",
-    description: "Espace privé.",
-    robots: {
-      index: false,
-      follow: false,
-      noarchive: true,
-      nocache: true,
-      googleBot: { index: false, follow: false, noimageindex: true },
-    },
+    title: "MonFrench — Vos activités, au bon endroit",
+    description: "Un espace simple où l’enseignant organise ses activités de français et envoie à chaque élève uniquement le travail choisi.",
     openGraph: {
       title: "MonFrench",
-      description: "Espace privé.",
+      description: "Votre espace de français, simplement.",
       type: "website",
       locale: "fr_CA",
+      images: [{ url: "/og.png", width: 1200, height: 630, alt: "MonFrench — Votre espace de français, simplement." }],
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title: "MonFrench",
-      description: "Espace privé.",
+      description: "Votre espace de français, simplement.",
+      images: ["/og.png"],
     },
   };
 }

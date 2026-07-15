@@ -25,6 +25,9 @@ test("build contains the portal and protected API routes", async () => {
   assert.match(page, /Corbeille/);
   assert.match(page, /Corrections/);
   assert.match(page, /Faire l’activité en ligne/);
+  assert.match(page, /Google Drive ↔ MonFrench/);
+  assert.match(page, /Envoyer la correction à l’élève/);
+  assert.match(page, /Voir l’espace de l’élève/);
 });
 
 test("authentication uses keyed password hashes, server sessions and CSRF", async () => {
@@ -114,6 +117,7 @@ test("the additive migration preserves existing assignments and submissions", as
   await applyMigration(db, "drizzle/0001_wet_purple_man.sql");
   await applyMigration(db, "drizzle/0002_known_pandemic.sql");
   await applyMigration(db, "drizzle/0003_protected_debonnaire.sql");
+  await applyMigration(db, "drizzle/0004_eager_human_fly.sql");
   assert.equal(db.prepare("SELECT COUNT(*) count FROM assignments").get().count, 1);
   assert.equal(db.prepare("SELECT COUNT(*) count FROM assignment_students").get().count, 1);
   assert.equal(db.prepare("SELECT COUNT(*) count FROM submissions").get().count, 1);
@@ -121,6 +125,8 @@ test("the additive migration preserves existing assignments and submissions", as
   assert.equal(db.prepare("SELECT activity_version_id FROM assignments WHERE id='assignment-1'").get().activity_version_id, "legacy-activity-1");
   assert.equal(db.prepare("SELECT COUNT(*) count FROM teacher_students WHERE student_id='student-1' AND teacher_id='teacher-1'").get().count, 1);
   assert.equal(db.prepare("SELECT COUNT(*) count FROM sqlite_master WHERE type='table' AND name='upload_sessions'").get().count, 1);
+  assert.equal(db.prepare("SELECT COUNT(*) count FROM sqlite_master WHERE type='table' AND name='student_assignment_folders'").get().count, 1);
+  assert.ok(db.prepare("PRAGMA table_info(submissions)").all().some(column => column.name === "corrected_original_name"));
   assert.equal(db.prepare("SELECT COUNT(*) count FROM audit_events WHERE action='promote_owner' AND entity_id='teacher-1'").get().count, 1);
   assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
   db.close();
@@ -168,9 +174,35 @@ test("Glassbook student exports can be saved into the activity library", async (
 
 test("Glassbook student work is saved and submitted through the portal", async () => {
   const route = await readFile("app/api/portal/route.ts", "utf8");
-  assert.match(route, /\["open_assignment","get_progress","save_progress","submit"\]/);
+  assert.match(route, /studentActions=\["open_assignment","get_progress","save_progress","submit"/);
   assert.match(route, /INSERT INTO student_work/);
   assert.match(route, /glassbook\.student-state/);
   assert.match(route, /onlineCapable=runtimeKind==="glassbook"\?1:0/);
   assert.match(route, /UPDATE student_work SET status='submitted'/);
+});
+
+test("student folders, teacher preview and correction return are server-authorized", async () => {
+  const route = await readFile("app/api/portal/route.ts", "utf8");
+  const fileRoute = await readFile("app/api/file/route.ts", "utf8");
+  assert.match(route, /create_student_folder/);
+  assert.match(route, /move_student_assignment/);
+  assert.match(route, /scope='student' AND created_by=\?/);
+  assert.match(route, /view_student_space/);
+  assert.match(route, /ownsStudent\(current,studentId\)/);
+  assert.match(route, /return_correction/);
+  assert.match(route, /corrected_original_name/);
+  assert.match(route, /has_corrected_file/);
+  assert.match(fileRoute, /s\.corrected_content_type/);
+});
+
+test("Google Drive access is teacher-only and uses a short-lived browser token", async () => {
+  const page = await readFile("app/page.tsx", "utf8");
+  const route = await readFile("app/api/portal/route.ts", "utf8");
+  assert.match(page, /initTokenClient/);
+  assert.match(page, /https:\/\/www\.googleapis\.com\/auth\/drive/);
+  assert.match(page, /application\/x-monfrench-transfer/);
+  assert.match(page, /copyDriveToMon/);
+  assert.match(page, /copyMonToDrive/);
+  assert.match(route, /googleDriveClientId/);
+  assert.doesNotMatch(route, /GOOGLE_DRIVE_CLIENT_SECRET/);
 });

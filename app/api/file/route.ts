@@ -17,11 +17,12 @@ async function activityFile(user: User, recordId: string) {
 
 async function submissionFile(user: User, recordId: string, corrected: boolean) {
   const key = corrected ? "s.corrected_r2_key" : "s.r2_key";
-  const name = corrected ? "COALESCE('correction-'||s.original_name,'correction.pdf')" : "s.original_name";
-  const content = corrected ? "COALESCE(s.content_type,'application/pdf')" : "s.content_type";
+  const name = corrected ? "COALESCE(s.corrected_original_name,'correction-'||s.original_name,'correction.pdf')" : "s.original_name";
+  const content = corrected ? "COALESCE(s.corrected_content_type,'application/pdf')" : "s.content_type";
+  const studentVisibility = corrected ? " AND s.corrected_at IS NOT NULL" : "";
   if (user.role === "owner") return env.DB.prepare(`SELECT ${key} r2_key,${name} original_name,${content} content_type FROM submissions s WHERE s.id=?`).bind(recordId).first<FileRow>();
   if (user.role === "teacher") return env.DB.prepare(`SELECT ${key} r2_key,${name} original_name,${content} content_type FROM submissions s JOIN teacher_students ts ON ts.student_id=s.student_id WHERE s.id=? AND ts.teacher_id=?`).bind(recordId, user.id).first<FileRow>();
-  return env.DB.prepare(`SELECT ${key} r2_key,${name} original_name,${content} content_type FROM submissions s WHERE s.id=? AND s.student_id=?`).bind(recordId, user.id).first<FileRow>();
+  return env.DB.prepare(`SELECT ${key} r2_key,${name} original_name,${content} content_type FROM submissions s WHERE s.id=? AND s.student_id=?${studentVisibility}`).bind(recordId, user.id).first<FileRow>();
 }
 
 export async function GET(request: Request) {

@@ -40,7 +40,7 @@ export const sessions = sqliteTable("sessions", {
 export const folders = sqliteTable("folders", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
-  scope: text("scope", { enum: ["activities", "assignments", "corrections", "students"] }).notNull(),
+  scope: text("scope", { enum: ["activities", "assignments", "corrections", "students", "student"] }).notNull(),
   parentId: text("parent_id"),
   createdBy: text("created_by").notNull().references(() => users.id),
   createdAt: text("created_at").notNull(),
@@ -137,6 +137,16 @@ export const assignmentStudents = sqliteTable("assignment_students", {
   index("assignment_students_student_idx").on(table.studentId),
 ]);
 
+export const studentAssignmentFolders = sqliteTable("student_assignment_folders", {
+  assignmentId: text("assignment_id").notNull().references(() => assignments.id, { onDelete: "cascade" }),
+  studentId: text("student_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  folderId: text("folder_id").references(() => folders.id, { onDelete: "set null" }),
+  updatedAt: text("updated_at").notNull(),
+}, (table) => [
+  uniqueIndex("student_assignment_folder_idx").on(table.assignmentId, table.studentId),
+  index("student_assignment_folder_student_idx").on(table.studentId, table.folderId),
+]);
+
 export const submissions = sqliteTable("submissions", {
   id: text("id").primaryKey(),
   assignmentId: text("assignment_id").notNull().references(() => assignments.id, { onDelete: "cascade" }),
@@ -150,6 +160,8 @@ export const submissions = sqliteTable("submissions", {
   submittedAt: text("submitted_at").notNull(),
   feedback: text("feedback"),
   correctedR2Key: text("corrected_r2_key"),
+  correctedOriginalName: text("corrected_original_name"),
+  correctedContentType: text("corrected_content_type"),
   correctedFileSize: integer("corrected_file_size").notNull().default(0),
   correctedAt: text("corrected_at"),
   updatedAt: text("updated_at"),

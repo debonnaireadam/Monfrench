@@ -153,13 +153,21 @@ async function staffDashboard(current: Session) {
   ];
   const trash = (await Promise.all(trashQueries.map((query) => query.all()))).flatMap((result) => result.results);
   const retention = await env.DB.prepare(`SELECT value FROM app_settings WHERE key='trash_retention_days'`).first<{ value: string }>();
-  return { user: current, permissions: { isOwner: owner, canManageTeachers: owner, canPurge: owner }, settings: { trash_retention_days: Number(retention?.value ?? 30) }, students: students.results, teachers: teachers.results, folders: folders.results, activities: activities.results, assignments: assignments.results, submissions: submissions.results, trash, auditLogs: auditLogs.results, storage };
+  return { user: current, permissions: { isOwner: owner, canManageTeachers: owner, canPurge: owner }, settings: { trash_retention_days: Number(retention?.value ?? 30) }, googleDriveClientId: (env.GOOGLE_DRIVE_CLIENT_ID as string | undefined) ?? null, students: students.results, teachers: teachers.results, folders: folders.results, activities: activities.results, assignments: assignments.results, submissions: submissions.results, trash, auditLogs: auditLogs.results, storage };
+}
+
+async function studentDashboard(studentId: string, student?: Pick<User, "id" | "username" | "display_name" | "role" | "must_change_password">) {
+  const [assignments, folders, user] = await Promise.all([
+    env.DB.prepare(`SELECT a.id,ac.id activity_id,a.activity_version_id,a.due_at,COALESCE(NULLIF(a.instructions,''),v.instructions,ac.instructions) instructions,COALESCE(v.title,ac.title) title,COALESCE(v.category,ac.category) category,COALESCE(v.description,ac.description) description,COALESCE(v.original_name,ac.original_name) original_name,COALESCE(v.content_type,ac.content_type) content_type,COALESCE(v.external_url,ac.external_url) external_url,COALESCE(v.runtime_kind,'generic') runtime_kind,COALESCE(v.online_capable,0) online_capable,ast.status,s.id submission_id,s.writing,s.original_name submission_original_name,s.feedback,s.corrected_at,CASE WHEN s.corrected_r2_key IS NOT NULL THEN 1 ELSE 0 END has_corrected_file,s.corrected_original_name,s.corrected_content_type,saf.folder_id student_folder_id FROM assignment_students ast JOIN assignments a ON a.id=ast.assignment_id JOIN activities ac ON ac.id=a.activity_id LEFT JOIN activity_versions v ON v.id=a.activity_version_id LEFT JOIN submissions s ON s.assignment_id=a.id AND s.student_id=ast.student_id LEFT JOIN student_assignment_folders saf ON saf.assignment_id=a.id AND saf.student_id=ast.student_id WHERE ast.student_id=? AND a.status='published' AND a.trashed_at IS NULL ORDER BY a.published_at DESC`).bind(studentId).all(),
+    env.DB.prepare(`SELECT id,name,parent_id,created_at,updated_at FROM folders WHERE scope='student' AND created_by=? AND trashed_at IS NULL ORDER BY name`).bind(studentId).all(),
+    student ? Promise.resolve(student) : env.DB.prepare(`SELECT id,username,display_name,role,must_change_password FROM users WHERE id=? AND role='student' AND active=1 AND trashed_at IS NULL`).bind(studentId).first<User>(),
+  ]);
+  return { user, assignments: assignments.results, folders: folders.results };
 }
 
 async function dashboard(current: Session) {
   if (staff(current)) return staffDashboard(current);
-  const assignments = await env.DB.prepare(`SELECT a.id,ac.id activity_id,a.activity_version_id,a.due_at,COALESCE(NULLIF(a.instructions,''),v.instructions,ac.instructions) instructions,COALESCE(v.title,ac.title) title,COALESCE(v.category,ac.category) category,COALESCE(v.description,ac.description) description,COALESCE(v.original_name,ac.original_name) original_name,COALESCE(v.content_type,ac.content_type) content_type,COALESCE(v.external_url,ac.external_url) external_url,COALESCE(v.runtime_kind,'generic') runtime_kind,COALESCE(v.online_capable,0) online_capable,ast.status,s.writing,s.feedback,s.corrected_at FROM assignment_students ast JOIN assignments a ON a.id=ast.assignment_id JOIN activities ac ON ac.id=a.activity_id LEFT JOIN activity_versions v ON v.id=a.activity_version_id LEFT JOIN submissions s ON s.assignment_id=a.id AND s.student_id=ast.student_id WHERE ast.student_id=? AND a.status='published' AND a.trashed_at IS NULL ORDER BY a.published_at DESC`).bind(current.id).all();
-  return { user: current, assignments: assignments.results };
+  return studentDashboard(current.id, current);
 }
 
 export async function GET(request: Request) {
@@ -373,7 +381,36 @@ export async function POST(request: Request) {
       const password=String(get(data,"password")??""); if(password.length<10)return json({error:"Le mot de passe doit contenir au moins 10 caractères."},400);
       const hashed=await passwordHash(password); await env.DB.prepare(`UPDATE users SET password_hash=?,password_salt=?,must_change_password=0,updated_at=? WHERE id=?`).bind(hashed.hash,hashed.salt,now(),current.id).run(); await env.DB.prepare(`DELETE FROM sessions WHERE user_id=? AND id_hash<>?`).bind(current.id,await sha256(cookie(request,"monfrench_session")!)).run(); return json({ok:true});
     }
-    if (!staff(current) && !["open_assignment","get_progress","save_progress","submit"].includes(action)) return json({error:"Réservé à l’enseignant."},403);
+    const studentActions=["open_assignment","get_progress","save_progress","submit","create_student_folder","rename_student_folder","move_student_assignment","trash_student_folder"];
+    if (!staff(current) && !studentActions.includes(action)) return json({error:"Réservé à l’enseignant."},403);
+
+    if(!staff(current)&&action==="create_student_folder"){
+      const name=String(get(data,"name")??"").trim(),parentId=String(get(data,"parentId")??"")||null;
+      if(!name||name.length>120)return json({error:"Nom de dossier invalide."},400);
+      if(parentId&&!await env.DB.prepare(`SELECT 1 ok FROM folders WHERE id=? AND scope='student' AND created_by=? AND trashed_at IS NULL`).bind(parentId,current.id).first())return json({error:"Dossier parent invalide."},400);
+      const folderId=id();await env.DB.prepare(`INSERT INTO folders(id,name,scope,parent_id,created_by,created_at) VALUES(?,?,'student',?,?,?)`).bind(folderId,name,parentId,current.id,now()).run();return json({ok:true,id:folderId});
+    }
+    if(!staff(current)&&action==="rename_student_folder"){
+      const folderId=String(get(data,"folderId")??""),name=String(get(data,"name")??"").trim();if(!folderId||!name||name.length>120)return json({error:"Dossier invalide."},400);
+      const result=await env.DB.prepare(`UPDATE folders SET name=?,updated_at=? WHERE id=? AND scope='student' AND created_by=? AND trashed_at IS NULL`).bind(name,now(),folderId,current.id).run();if(!result.meta.changes)return json({error:"Dossier introuvable."},404);return json({ok:true});
+    }
+    if(!staff(current)&&action==="move_student_assignment"){
+      const assignmentId=String(get(data,"assignmentId")??""),folderId=String(get(data,"folderId")??"")||null;
+      if(!await env.DB.prepare(`SELECT 1 ok FROM assignment_students ast JOIN assignments a ON a.id=ast.assignment_id WHERE ast.assignment_id=? AND ast.student_id=? AND a.status='published' AND a.trashed_at IS NULL`).bind(assignmentId,current.id).first())return json({error:"Devoir introuvable."},404);
+      if(folderId&&!await env.DB.prepare(`SELECT 1 ok FROM folders WHERE id=? AND scope='student' AND created_by=? AND trashed_at IS NULL`).bind(folderId,current.id).first())return json({error:"Dossier invalide."},400);
+      await env.DB.prepare(`INSERT INTO student_assignment_folders(assignment_id,student_id,folder_id,updated_at) VALUES(?,?,?,?) ON CONFLICT(assignment_id,student_id) DO UPDATE SET folder_id=excluded.folder_id,updated_at=excluded.updated_at`).bind(assignmentId,current.id,folderId,now()).run();return json({ok:true});
+    }
+    if(!staff(current)&&action==="trash_student_folder"){
+      const folderId=String(get(data,"folderId")??"");if(!folderId)return json({error:"Dossier invalide."},400);
+      const owned=await env.DB.prepare(`SELECT 1 ok FROM folders WHERE id=? AND scope='student' AND created_by=? AND trashed_at IS NULL`).bind(folderId,current.id).first();if(!owned)return json({error:"Dossier introuvable."},404);
+      const stamp=now();await env.DB.batch([env.DB.prepare(`WITH RECURSIVE tree(id) AS (SELECT id FROM folders WHERE id=? AND scope='student' AND created_by=? UNION ALL SELECT f.id FROM folders f JOIN tree t ON f.parent_id=t.id WHERE f.scope='student' AND f.created_by=?) UPDATE student_assignment_folders SET folder_id=NULL,updated_at=? WHERE student_id=? AND folder_id IN (SELECT id FROM tree)`).bind(folderId,current.id,current.id,stamp,current.id),env.DB.prepare(`WITH RECURSIVE tree(id) AS (SELECT id FROM folders WHERE id=? AND scope='student' AND created_by=? UNION ALL SELECT f.id FROM folders f JOIN tree t ON f.parent_id=t.id WHERE f.scope='student' AND f.created_by=?) UPDATE folders SET trashed_at=?,updated_at=? WHERE id IN (SELECT id FROM tree)`).bind(folderId,current.id,current.id,stamp,stamp)]);return json({ok:true});
+    }
+
+    if(staff(current)&&action==="view_student_space"){
+      const studentId=String(get(data,"studentId")??"");if(!(await ownsStudent(current,studentId)))return json({error:"Accès refusé."},403);
+      const student=await env.DB.prepare(`SELECT id,username,display_name,role,must_change_password FROM users WHERE id=? AND role='student' AND active=1 AND trashed_at IS NULL`).bind(studentId).first<User>();if(!student)return json({error:"Élève introuvable."},404);
+      return json({ok:true,portal:{authenticated:true,csrfToken:current.csrf_token,...await studentDashboard(studentId,student)}});
+    }
 
     if (action === "get_progress" || action === "save_progress") {
       const assignmentId=String(get(data,"assignmentId")??"");
@@ -519,8 +556,14 @@ export async function POST(request: Request) {
     if(action==="reopen_submission"){
       const submissionId=String(get(data,"submissionId")??"");if(!(await owns(current,"submission",submissionId)))return json({error:"Accès refusé."},403);const row=await env.DB.prepare(`SELECT assignment_id,student_id FROM submissions WHERE id=?`).bind(submissionId).first<{assignment_id:string;student_id:string}>();if(!row)return json({error:"Travail introuvable."},404);await env.DB.batch([env.DB.prepare(`UPDATE assignment_students SET status='opened',completed_at=NULL WHERE assignment_id=? AND student_id=?`).bind(row.assignment_id,row.student_id),env.DB.prepare(`UPDATE submissions SET corrected_at=NULL,updated_at=? WHERE id=?`).bind(now(),submissionId),env.DB.prepare(`UPDATE student_work SET status='draft',submitted_at=NULL,updated_at=? WHERE assignment_id=? AND student_id=?`).bind(now(),row.assignment_id,row.student_id)]);await audit(current,action,"submission",submissionId);return json({ok:true});
     }
-    if(action==="feedback"){
-      const submissionId=String(get(data,"submissionId")??"");if(!(await owns(current,"submission",submissionId)))return json({error:"Accès refusé."},403);await env.DB.prepare(`UPDATE submissions SET feedback=?,corrected_at=?,updated_at=? WHERE id=?`).bind(String(get(data,"feedback")??""),now(),now(),submissionId).run();await audit(current,action,"submission",submissionId);return json({ok:true});
+    if(action==="feedback"||action==="return_correction"){
+      const submissionId=String(get(data,"submissionId")??"");if(!(await owns(current,"submission",submissionId)))return json({error:"Accès refusé."},403);
+      const existing=await env.DB.prepare(`SELECT corrected_r2_key,feedback FROM submissions WHERE id=?`).bind(submissionId).first<{corrected_r2_key:string|null;feedback:string|null}>();if(!existing)return json({error:"Travail introuvable."},404);
+      const correctedFile=get(data,"correctedFile");let correctedKey:string|null=null,correctedName:string|null=null,correctedType:string|null=null,correctedSize=0;
+      if(correctedFile instanceof File&&correctedFile.size){if(correctedFile.size>25*1024*1024)return json({error:"Fichier corrigé trop volumineux (25 Mo maximum)."},413);correctedName=correctedFile.name;correctedType=(correctedFile.type||"application/octet-stream").replace(/[\r\n]/g,"").slice(0,200);correctedSize=correctedFile.size;correctedKey=`corrections/${submissionId}/${id()}-${safeFileName(correctedFile.name)}`;await env.FILES.put(correctedKey,correctedFile.stream(),{httpMetadata:{contentType:correctedType}});}
+      const feedback=String(get(data,"feedback")??"").trim();if(!feedback&&!correctedKey&&!existing.corrected_r2_key)return json({error:"Ajoutez un commentaire ou un fichier corrigé avant de l’envoyer."},400);
+      const stamp=now();try{await env.DB.prepare(`UPDATE submissions SET feedback=?,corrected_r2_key=COALESCE(?,corrected_r2_key),corrected_original_name=COALESCE(?,corrected_original_name),corrected_content_type=COALESCE(?,corrected_content_type),corrected_file_size=CASE WHEN ? IS NULL THEN corrected_file_size ELSE ? END,corrected_at=?,updated_at=? WHERE id=?`).bind(feedback,correctedKey,correctedName,correctedType,correctedKey,correctedSize,stamp,stamp,submissionId).run();}catch(error){if(correctedKey)await env.FILES.delete(correctedKey);throw error;}
+      if(correctedKey&&existing.corrected_r2_key&&existing.corrected_r2_key!==correctedKey)await env.FILES.delete(existing.corrected_r2_key);await audit(current,"return_correction","submission",submissionId,{hasCorrectedFile:Boolean(correctedKey)});return json({ok:true});
     }
     if(action==="storage_cleanup"){
       if(current.role!=="owner")return json({error:"Réservé à l’administrateur principal."},403);

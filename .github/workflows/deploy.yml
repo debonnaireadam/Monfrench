@@ -1,0 +1,83 @@
+name: Deploy to Cloudflare
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+  CF_WORKER_NAME: ${{ vars.CF_WORKER_NAME || 'monfrench' }}
+  CF_D1_DATABASE_NAME: ${{ vars.CF_D1_DATABASE_NAME || 'monfrench-db' }}
+  CF_R2_BUCKET_NAME: ${{ vars.CF_R2_BUCKET_NAME || 'monfrench-files' }}
+  CF_CUSTOM_DOMAIN: ${{ vars.CF_CUSTOM_DOMAIN }}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check Cloudflare credentials
+        id: cf
+        run: |
+          if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID secrets not set - building and testing only, skipping deploy."
+          fi
+
+      - name: Ensure D1 database and R2 bucket exist
+        if: steps.cf.outputs.ok == 'true'
+        run: |
+          if ! npx wrangler d1 info "$CF_D1_DATABASE_NAME" --json > /dev/null 2>&1; then
+            npx wrangler d1 create "$CF_D1_DATABASE_NAME"
+          fi
+          DB_ID=$(npx wrangler d1 info "$CF_D1_DATABASE_NAME" --json | jq -r '.uuid')
+          if [ -z "$DB_ID" ] || [ "$DB_ID" = "null" ]; then
+            echo "Could not resolve D1 database id for $CF_D1_DATABASE_NAME" >&2
+            exit 1
+          fi
+          echo "CF_D1_DATABASE_ID=$DB_ID" >> "$GITHUB_ENV"
+          npx wrangler r2 bucket info "$CF_R2_BUCKET_NAME" > /dev/null 2>&1 \
+            || npx wrangler r2 bucket create "$CF_R2_BUCKET_NAME"
+
+      - name: Build and test
+        run: npm test
+
+      - name: Apply D1 migrations
+        if: steps.cf.outputs.ok == 'true'
+        run: |
+          cat > .d1-migrate.json <<EOF
+          {
+            "name": "$CF_WORKER_NAME",
+            "compatibility_date": "2025-12-01",
+            "d1_databases": [
+              {
+                "binding": "DB",
+                "database_name": "$CF_D1_DATABASE_NAME",
+                "database_id": "$CF_D1_DATABASE_ID",
+                "migrations_dir": "./drizzle"
+              }
+            ]
+          }
+          EOF
+          npx wrangler d1 migrations apply "$CF_D1_DATABASE_NAME" --remote -c .d1-migrate.json
+
+      - name: Deploy Worker
+        if: steps.cf.outputs.ok == 'true'
+        run: npx wrangler deploy

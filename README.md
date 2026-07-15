@@ -22,3 +22,8 @@ npm install
 npm run dev
 npm run build
 ```
+
+## Deployment
+
+Pushing to `main` deploys to Cloudflare via GitHub Actions — see
+[docs/deploy-cloudflare.md](docs/deploy-cloudflare.md) for the one-time setup.

@@ -11,15 +11,32 @@ const { d1, r2 } = hostingConfig;
 // macOS Seatbelt blocks FSEvents, so Codex previews need polling for HMR.
 const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
 
+// Real Cloudflare deploys (GitHub Actions) override the placeholder bindings
+// via CF_* environment variables. When unset, local/Codex dev is unchanged.
+const deployD1DatabaseId = process.env.CF_D1_DATABASE_ID;
+const deployD1DatabaseName = process.env.CF_D1_DATABASE_NAME;
+const deployR2BucketName = process.env.CF_R2_BUCKET_NAME;
+const deployWorkerName = process.env.CF_WORKER_NAME;
+const deployCustomDomain = process.env.CF_CUSTOM_DOMAIN;
+const isRealDeploy = Boolean(deployD1DatabaseId);
+
 const localBindingConfig = {
+  ...(deployWorkerName ? { name: deployWorkerName } : {}),
+  ...(isRealDeploy ? { compatibility_date: "2025-12-01" } : {}),
   main: "./worker/index.ts",
   compatibility_flags: ["nodejs_compat"],
+  // The worker's /_vinext/image endpoint needs the Images binding in
+  // production; Codex hosting injects it, a real deploy declares it here.
+  ...(isRealDeploy ? { images: { binding: "IMAGES" } } : {}),
+  ...(deployCustomDomain
+    ? { routes: [{ pattern: deployCustomDomain, custom_domain: true }] }
+    : {}),
   d1_databases: d1
     ? [
         {
           binding: d1,
-          database_name: "site-creator-d1",
-          database_id: SITE_CREATOR_PLACEHOLDER_DATABASE_ID,
+          database_name: deployD1DatabaseName ?? "site-creator-d1",
+          database_id: deployD1DatabaseId ?? SITE_CREATOR_PLACEHOLDER_DATABASE_ID,
         },
       ]
     : [],
@@ -27,7 +44,7 @@ const localBindingConfig = {
     ? [
         {
           binding: r2,
-          bucket_name: "site-creator-r2",
+          bucket_name: deployR2BucketName ?? "site-creator-r2",
         },
       ]
     : [],

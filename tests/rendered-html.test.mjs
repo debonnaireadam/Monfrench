@@ -46,7 +46,9 @@ test("build contains the portal and protected API routes", async () => {
   assert.match(page, /updateAll\(\{font:/);
   assert.match(page, /updateAll\(\{design:/);
   assert.match(page, /dashboard-item-text/);
-  assert.match(page, /\{item\.label\}\{item\.value!==undefined\?/);
+  assert.doesNotMatch(page, /\{item\.label\}\{item\.value!==undefined\?/);
+  assert.match(page, /item\.id==="corrections"&&pending>0/);
+  assert.match(page, /className="correction-notice"/);
   assert.match(page, /onChange=\{event=>update\(item\.id,\{color:/);
   assert.match(page, /tile-select-control/);
   assert.match(page, /tile-palette/);

@@ -103,6 +103,9 @@ test("display preferences offer one continuous text control and themes", async (
   assert.match(page, /Tout le texte/);
   assert.match(page, /Taille unique/);
   assert.match(page, /slider\("text"/);
+  assert.match(page, /slider\("text","Taille unique",40,100\)/);
+  assert.match(page, /textScaleVersion===2/);
+  assert.match(page, /\(values\.text\+60\)\/100/);
   assert.match(css, /--text-scale/);
   assert.match(css, /font-size: calc\(16px \* var\(--text-scale\)\)/);
   assert.match(css, /--spacing-scale/);

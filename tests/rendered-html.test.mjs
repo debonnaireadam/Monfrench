@@ -76,11 +76,17 @@ test("build contains the portal and protected API routes", async () => {
   assert.match(page, /Voir l’espace de l’élève/);
   assert.doesNotMatch(page, /display_name} 👋/);
   assert.match(await readFile("app/globals.css", "utf8"), /Compact student workspace/);
-  assert.match(page, /homework-view-controls/);
+  assert.doesNotMatch(page, /homework-view-controls/);
   assert.match(page, /monfrench-homework-view-/);
   assert.match(page, />Tuiles<\/button>/);
   assert.match(page, />Liste<\/button>/);
   assert.match(page, /--homework-size/);
+  assert.match(page, /homework-design-settings/);
+  assert.match(page, /monfrench-homework-preferences/);
+  assert.match(page, />Minimal<\/option>/);
+  assert.match(page, />Doux<\/option>/);
+  assert.match(page, />Contour<\/option>/);
+  assert.match(page, />Verre<\/option>/);
 });
 
 test("authentication uses keyed password hashes, server sessions and CSRF", async () => {

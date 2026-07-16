@@ -203,7 +203,7 @@ button, input, textarea, select { font-size: calc(1em * var(--control-scale)); }
 .dashboard-toolbar > div { display: flex; flex-wrap: wrap; gap: 8px; }
 .customizable-grid { grid-auto-flow: dense; transition: gap 180ms ease; }
 .customizable-grid:has(.dashboard-tile.dragging) { gap: 22px; }
-.dashboard-tile { min-height: 180px; padding: 0 !important; overflow: visible; }
+.dashboard-tile { min-height: calc(150px * var(--tile-scale, .8)); padding: 0 !important; overflow: visible; }
 .dashboard-tile[draggable="true"] { cursor: grab; }
 .dashboard-tile[draggable="true"]:active { cursor: grabbing; }
 .dashboard-tile { transition: transform 180ms ease, opacity 180ms ease, border-color 180ms ease, box-shadow 180ms ease; }
@@ -211,13 +211,16 @@ button, input, textarea, select { font-size: calc(1em * var(--control-scale)); }
 .dashboard-tile.drag-over { z-index: 3; transform: scale(.92); border: 2px dashed var(--terracotta); background: color-mix(in srgb,var(--paper) 78%,var(--terracotta)); box-shadow: 0 18px 38px rgba(22,50,79,.16); }
 .dashboard-tile.drag-over::after { content: "Déposer ici"; position: absolute; z-index: 5; inset: 50% auto auto 50%; transform: translate(-50%,-50%); padding: 7px 11px; border-radius: 999px; background: var(--navy); color: var(--paper); font-size: .72rem; font-weight: 800; pointer-events: none; white-space: nowrap; }
 .dashboard-tile:has(.tile-resize-handle:hover) { outline: 2px solid var(--terracotta); outline-offset: 2px; }
-.dashboard-tile.tile-small { grid-column: span 1; min-height: 145px; }
+.dashboard-tile.tile-small { grid-column: span 1; min-height: calc(120px * var(--tile-scale, .8)); }
 .dashboard-tile.tile-medium { grid-column: span 1; }
 .dashboard-tile.tile-large { grid-column: span 2; }
-.dashboard-tile-main { position: relative; width: 100%; min-height: inherit; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; padding: calc(26px * var(--spacing-scale)); border: 0; border-radius: inherit; background: transparent; color: inherit; cursor: pointer; text-align: left; }
-.dashboard-tile-main .tile-text-small { font-size: clamp(1.5rem,2vw,2rem); }
-.dashboard-tile-main .tile-text-medium { font-size: clamp(2.15rem,2.7vw,3rem); }
-.dashboard-tile-main .tile-text-large { font-size: clamp(2.8rem,3.6vw,4.25rem); }
+.dashboard-tile-main { position: relative; width: 100%; min-height: inherit; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; padding: calc(20px * var(--spacing-scale) * var(--tile-scale, .8)); border: 0; border-radius: inherit; background: transparent; color: inherit; cursor: pointer; text-align: left; }
+.dashboard-tile-main .tile-text-small { font-size: calc(clamp(1.3rem,1.7vw,1.75rem) * var(--tile-scale, .8)); }
+.dashboard-tile-main .tile-text-medium { font-size: calc(clamp(1.65rem,2.1vw,2.25rem) * var(--tile-scale, .8)); }
+.dashboard-tile-main .tile-text-large { font-size: calc(clamp(2.2rem,2.8vw,3.2rem) * var(--tile-scale, .8)); }
+.dashboard-size-control { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; padding: 7px 11px; border: 1px solid var(--border); border-radius: 11px; background: var(--paper); font-size: .76rem; font-weight: 800; }
+.dashboard-size-control input { width: 120px; accent-color: var(--blue); }
+.dashboard-size-control strong { min-width: 38px; color: var(--ink-soft); }
 .tile-editor { position: relative; z-index: 2; display: flex; flex-wrap: wrap; gap: 5px; padding: 8px; border-top: 1px solid var(--border); background: var(--paper); }
 .tile-editor button { min-height: 32px; padding: 5px 8px; border: 1px solid var(--border); border-radius: 7px; background: var(--ivory); cursor: pointer; font-size: .7rem; font-weight: 750; }
 .tile-resize-handle { position: absolute; z-index: 4; right: 6px; bottom: 6px; width: 34px; height: 34px; display: grid; place-items: center; padding: 0; border: 1px solid var(--terracotta); border-radius: 9px; background: var(--paper); color: var(--navy); cursor: nwse-resize; font-size: 1rem; font-weight: 900; touch-action: none; }

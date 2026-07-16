@@ -92,6 +92,12 @@ test("build contains the portal and protected API routes", async () => {
   assert.match(page, /Array\.from\(\{length:4\}/);
   assert.match(page, /Modifier les raccourcis/);
   assert.match(page, /shortcut-colors/);
+  assert.match(page, /label:"Messages"/);
+  assert.match(page, /label:"Google Meet"/);
+  assert.match(page, /label:"Drive"/);
+  assert.match(page, /label:"Calendrier"/);
+  assert.match(page, /shortcut-size-control/);
+  assert.match(page, /--student-shortcut-size/);
 });
 
 test("authentication uses keyed password hashes, server sessions and CSRF", async () => {

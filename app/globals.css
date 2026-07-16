@@ -149,14 +149,10 @@ h3 { font-size: 1.15rem; line-height: 1.3; }
 .word-count { margin: 8px 0 22px; color: var(--ink-soft); font-size: 0.82rem; text-align: right; }
 .teacher-correction-note { padding: 14px 16px; border-radius: 10px; background: #f3e8d2; color: #624d25; }
 
-.teacher-layout { min-height: calc(100vh - 58px); display: grid; grid-template-columns: 232px minmax(0, 1fr); }
-.teacher-sidebar { position: sticky; top: 0; height: calc(100vh - 58px); display: flex; flex-direction: column; justify-content: space-between; padding: 34px 20px 24px; border-right: 1px solid var(--border); background: #f0ecE2; }
-.sidebar-label { margin: 0 12px 24px; color: var(--terracotta); font-size: 0.74rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
-.teacher-sidebar nav { display: flex; flex-direction: column; gap: 5px; }
-.teacher-sidebar nav button, .sidebar-exit { min-height: 45px; padding: 10px 13px; border: 0; border-radius: 10px; background: transparent; text-align: left; cursor: pointer; font-weight: 700; }
-.teacher-sidebar nav button.active { background: var(--navy); color: white; }
-.teacher-sidebar nav button:hover:not(.active), .sidebar-exit:hover { background: rgba(255, 255, 255, 0.65); }
-.teacher-content { min-width: 0; padding: clamp(34px, 5vw, 68px); }
+.teacher-layout { min-height: calc(100vh - 58px); }
+.teacher-content { width: 100%; max-width: 1680px; min-width: 0; margin: 0 auto; padding: clamp(34px, 5vw, 68px); }
+.teacher-home-link { display: inline-flex; margin: 0 0 24px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 999px; background: white; color: var(--navy); cursor: pointer; font-size: .8rem; font-weight: 850; }
+.teacher-home-link:hover, .teacher-home-link:focus-visible { border-color: var(--blue); outline: none; }
 .teacher-page-header { margin-bottom: 30px; }
 .teacher-page-header h1 { margin-bottom: 8px; }
 .teacher-page-header p:last-child { margin-bottom: 0; }
@@ -169,14 +165,9 @@ h3 { font-size: 1.15rem; line-height: 1.3; }
 .stat-grid strong, .stat-grid span { display: block; }
 .stat-grid strong { margin-bottom: 5px; font-family: var(--font-display); font-size: 2rem; }
 .stat-grid span { color: var(--ink-soft); font-size: 0.84rem; }
-.dashboard-destinations { margin-top: 28px; }
-.destination-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; }
-.destination-grid button { position: relative; min-height: 126px; display: grid; align-content: end; gap: 4px; padding: 19px; border: 1px solid var(--border); border-radius: 14px; background: white; color: var(--navy); text-align: left; cursor: pointer; transition: transform .18s ease, background .18s ease, box-shadow .18s ease; }
-.destination-grid button:hover, .destination-grid button:focus-visible { transform: translateY(-3px); background: #f7f4ed; box-shadow: 0 12px 28px rgba(22,50,79,.08); outline: none; }
-.destination-grid button > span { position: absolute; top: 16px; left: 19px; color: var(--terracotta); font-size: .7rem; font-weight: 900; letter-spacing: .1em; }
-.destination-grid button strong { font-family: var(--font-display); font-size: 1.25rem; }
-.destination-grid button small { color: var(--ink-soft); }
-.destination-grid button i { position: absolute; top: 15px; right: 18px; color: var(--blue); font-style: normal; font-weight: 900; }
+.teacher-home-header { margin-bottom: 22px; }
+.teacher-section-grid { margin-bottom: 0; }
+.teacher-section-grid .stat-link { min-height: 156px; }
 .teacher-columns { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(290px, 0.8fr); gap: 18px; }
 .teacher-panel { padding: 24px; border: 1px solid var(--border); border-radius: 16px; background: white; }
 .panel-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; margin-bottom: 18px; }
@@ -256,7 +247,6 @@ h3 { font-size: 1.15rem; line-height: 1.3; }
 @media (max-width: 1080px) {
   .library-grid { grid-template-columns: repeat(2, minmax(260px, 1fr)); }
   .stat-grid { grid-template-columns: repeat(2, 1fr); }
-  .destination-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .student-admin-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
@@ -265,12 +255,6 @@ h3 { font-size: 1.15rem; line-height: 1.3; }
   .preview-bar p span { display: none; }
   .welcome { grid-template-columns: 1fr; }
   .welcome-panel { border-top: 1px solid var(--border); border-left: 0; }
-  .teacher-layout { grid-template-columns: 1fr; }
-  .teacher-sidebar { position: static; width: 100%; height: auto; display: block; padding: 14px 18px; border-right: 0; border-bottom: 1px solid var(--border); }
-  .sidebar-label { display: none; }
-  .teacher-sidebar nav { display: grid; grid-template-columns: repeat(6, minmax(max-content, 1fr)); overflow-x: auto; }
-  .teacher-sidebar nav button { text-align: center; white-space: nowrap; }
-  .sidebar-exit { display: none; }
   .teacher-columns { grid-template-columns: 1fr; }
   .progress-card { grid-template-columns: auto 1fr; }
   .progress-card p { grid-column: 1 / -1; }
@@ -302,10 +286,9 @@ h3 { font-size: 1.15rem; line-height: 1.3; }
   .player-placeholder { min-height: 390px; padding: 35px 22px; }
   .player-actions, .dialog-actions { flex-direction: column-reverse; }
   .player-actions button, .dialog-actions button { width: 100%; }
-  .teacher-sidebar nav { grid-template-columns: repeat(6, max-content); }
   .teacher-content { padding: 34px 18px 70px; }
   .stat-grid { grid-template-columns: 1fr 1fr; }
-  .stat-grid article { padding: 18px; }
+  .stat-grid article, .stat-grid .stat-link { padding: 18px; }
   .activity-list article { grid-template-columns: auto 1fr; }
   .activity-list .status { grid-column: 2; justify-self: start; }
   .library-toolbar, .form-grid, .source-options { grid-template-columns: 1fr; }
@@ -581,7 +564,6 @@ button.explorer-open { cursor: pointer; }
 }
 
 @media (max-width: 900px) {
-  .teacher-sidebar nav { grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: max-content; }
   .drive-toolbar { position: static; grid-template-columns: auto minmax(180px,1fr) auto auto; }
   .drive-toolbar > select { display: none; }
   .folder-grid { grid-template-columns: repeat(2,minmax(150px,1fr)); }
@@ -591,8 +573,6 @@ button.explorer-open { cursor: pointer; }
 }
 
 @media (max-width: 680px) {
-  .teacher-sidebar nav { grid-template-columns: none; }
-  .destination-grid { grid-template-columns: 1fr; }
   .batch-drop-heading { flex-direction: column; }
   .batch-drop-zone { min-height: 155px; }
   .batch-file-list > div { grid-template-columns: minmax(0,1fr) auto; }

@@ -25,8 +25,10 @@ test("build contains the portal and protected API routes", async () => {
   assert.match(page, /Corbeille/);
   assert.match(page, /Corrections/);
   assert.match(page, /Accéder à l’activité en ligne/);
-  assert.match(page, /Toutes les sections/);
   assert.match(page, /setTab\(item\.tab\)/);
+  assert.match(page, /teacher-section-grid/);
+  assert.match(page, /teacher-home-link/);
+  assert.doesNotMatch(page, /teacher-sidebar/);
   assert.match(page, /activity-preview-button/);
   assert.match(page, /compact onClose/);
   assert.match(page, /Dépôt multiple/);
@@ -163,7 +165,7 @@ test("Glassbook student exports can be saved into the activity library", async (
   const glassbookSource = await readFile("app/private-apps/glassbook2_teacher.html", "utf8");
   const glassbook = await stat("app/private-apps/glassbook2_teacher.html");
   assert.ok(glassbook.size > 2_000_000);
-  assert.match(page, /apps:"Applications"/);
+  assert.match(page, /tab:"apps",value:1/);
   assert.match(page, /\/api\/teacher-apps\/glassbook/);
   assert.match(page, /sandbox="allow-scripts allow-popups allow-downloads allow-forms allow-modals"/);
   assert.match(page, /monfrench:glassbook-build/);

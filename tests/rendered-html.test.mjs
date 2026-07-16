@@ -97,6 +97,10 @@ test("large activity files use authenticated staged R2 uploads", async () => {
   assert.match(route, /complete_activity_upload/);
   assert.match(page, /chunkSize=512\*1024/);
   assert.match(page, /Content-Type":"application\/octet-stream/);
+  assert.match(route, /uploadMode\(current\)==="none"/);
+  assert.match(route, /update_teacher_upload_permission/);
+  assert.match(route, /approve_activity/);
+  assert.match(route, /publication_status='published'/);
 });
 
 test("roles, shared attribution, version pinning and safe deletion are present", async () => {
@@ -149,6 +153,7 @@ test("the additive migration preserves existing assignments and submissions", as
   await applyMigration(db, "drizzle/0002_known_pandemic.sql");
   await applyMigration(db, "drizzle/0003_protected_debonnaire.sql");
   await applyMigration(db, "drizzle/0004_eager_human_fly.sql");
+  await applyMigration(db, "drizzle/0005_upload_permissions.sql");
   assert.equal(db.prepare("SELECT COUNT(*) count FROM assignments").get().count, 1);
   assert.equal(db.prepare("SELECT COUNT(*) count FROM assignment_students").get().count, 1);
   assert.equal(db.prepare("SELECT COUNT(*) count FROM submissions").get().count, 1);
@@ -158,6 +163,8 @@ test("the additive migration preserves existing assignments and submissions", as
   assert.equal(db.prepare("SELECT COUNT(*) count FROM sqlite_master WHERE type='table' AND name='upload_sessions'").get().count, 1);
   assert.equal(db.prepare("SELECT COUNT(*) count FROM sqlite_master WHERE type='table' AND name='student_assignment_folders'").get().count, 1);
   assert.ok(db.prepare("PRAGMA table_info(submissions)").all().some(column => column.name === "corrected_original_name"));
+  assert.equal(db.prepare("SELECT upload_permission FROM users WHERE id='teacher-1'").get().upload_permission, "none");
+  assert.equal(db.prepare("SELECT publication_status FROM activities WHERE id='activity-1'").get().publication_status, "published");
   assert.equal(db.prepare("SELECT COUNT(*) count FROM audit_events WHERE action='promote_owner' AND entity_id='teacher-1'").get().count, 1);
   assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
   db.close();

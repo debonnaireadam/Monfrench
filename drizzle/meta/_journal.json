@@ -36,6 +36,13 @@
       "when": 1784078579863,
       "tag": "0004_eager_human_fly",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1784226000000,
+      "tag": "0005_upload_permissions",
+      "breakpoints": true
     }
   ]
 }

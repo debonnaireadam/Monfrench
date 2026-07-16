@@ -9,6 +9,7 @@ export const users = sqliteTable("users", {
   passwordSalt: text("password_salt").notNull(),
   active: integer("active", { mode: "boolean" }).notNull().default(true),
   mustChangePassword: integer("must_change_password", { mode: "boolean" }).notNull().default(true),
+  uploadPermission: text("upload_permission", { enum: ["none", "review", "immediate"] }).notNull().default("none"),
   folderId: text("folder_id"),
   createdBy: text("created_by"),
   deactivatedAt: text("deactivated_at"),
@@ -71,6 +72,7 @@ export const activities = sqliteTable("activities", {
   updatedAt: text("updated_at"),
   archivedAt: text("archived_at"),
   trashedAt: text("trashed_at"),
+  publicationStatus: text("publication_status", { enum: ["pending", "published"] }).notNull().default("published"),
 }, (table) => [
   index("activities_creator_idx").on(table.createdBy),
   index("activities_folder_idx").on(table.folderId),

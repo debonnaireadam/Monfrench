@@ -36,7 +36,8 @@ test("build contains the portal and protected API routes", async () => {
   assert.match(page, /Personnaliser/);
   assert.match(page, /\+ Raccourci/);
   assert.match(page, /draggable=\{editing\}/);
-  assert.match(page, /onDrop=\{\(\)=>dropOn\(item\.id\)\}/);
+  assert.match(page, /onDragEnter=\{\(\)=>previewDrop\(item\.id\)\}/);
+  assert.match(page, /finishDrop/);
   assert.match(page, /tile-resize-handle/);
   assert.match(page, /Clair/);
   assert.match(page, /Sombre/);

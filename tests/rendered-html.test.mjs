@@ -41,11 +41,12 @@ test("build contains the portal and protected API routes", async () => {
   assert.match(page, /tile-resize-handle/);
   assert.match(page, /dashboard-size-control/);
   assert.match(page, /-tile-scale/);
-  assert.match(page, /tile-title-control/);
+  assert.doesNotMatch(page, /tile-title-control/);
   assert.match(page, /const updateAll=/);
-  assert.match(page, /updateAll\(\{titleScale:/);
   assert.match(page, /updateAll\(\{font:/);
   assert.match(page, /updateAll\(\{design:/);
+  assert.match(page, /dashboard-item-text/);
+  assert.match(page, /\{item\.label\}\{item\.value!==undefined\?/);
   assert.match(page, /onChange=\{event=>update\(item\.id,\{color:/);
   assert.match(page, /tile-select-control/);
   assert.match(page, /tile-palette/);
@@ -87,12 +88,14 @@ test("authentication uses keyed password hashes, server sessions and CSRF", asyn
   assert.match(route, /if\(!password\)/);
 });
 
-test("display preferences offer continuous typography controls and themes", async () => {
+test("display preferences offer one continuous text control and themes", async () => {
+  const page = await readFile("app/page.tsx", "utf8");
   const css = await readFile("app/globals.css", "utf8");
-  assert.match(css, /--interface-scale/);
-  assert.match(css, /--heading-scale/);
-  assert.match(css, /--reading-scale/);
-  assert.match(css, /--control-scale/);
+  assert.match(page, /Tout le texte/);
+  assert.match(page, /Taille unique/);
+  assert.match(page, /slider\("text"/);
+  assert.match(css, /--text-scale/);
+  assert.match(css, /font-size: calc\(16px \* var\(--text-scale\)\)/);
   assert.match(css, /--spacing-scale/);
   assert.match(css, /html\[data-theme="dark"\]/);
   assert.match(css, /color-scheme: dark/);

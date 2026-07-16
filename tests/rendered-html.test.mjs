@@ -87,6 +87,11 @@ test("build contains the portal and protected API routes", async () => {
   assert.match(page, />Doux<\/option>/);
   assert.match(page, />Contour<\/option>/);
   assert.match(page, />Verre<\/option>/);
+  assert.match(page, /function StudentShortcuts/);
+  assert.match(page, /monfrench-student-shortcuts-/);
+  assert.match(page, /Array\.from\(\{length:4\}/);
+  assert.match(page, /Modifier les raccourcis/);
+  assert.match(page, /shortcut-colors/);
 });
 
 test("authentication uses keyed password hashes, server sessions and CSRF", async () => {

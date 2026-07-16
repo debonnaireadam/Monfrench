@@ -561,6 +561,26 @@ button.explorer-open { cursor: pointer; }
 .student-page .student-header > div { min-width: 0; }
 .student-page .student-header h1 { margin: 0; font-size: clamp(1.45rem,2.4vw,2rem); line-height: 1; }
 .student-page .student-header .secondary-button { min-height: 34px; width: auto; padding: 6px 11px; border-radius: 9px; white-space: nowrap; }
+.student-shortcuts { position: relative; min-width: 0; flex: 1; }
+.student-shortcut-strip { display: flex; align-items: center; justify-content: flex-end; gap: 5px; }
+.student-shortcut { max-width: 130px; min-width: 38px; height: 34px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 5px 9px; border: 1px solid color-mix(in srgb,var(--shortcut-color,var(--border)) 70%,var(--border)); border-radius: 999px; background: var(--shortcut-color,var(--paper)); color: var(--navy); cursor: pointer; text-decoration: none; }
+.student-shortcut strong { overflow: hidden; font-size: .68rem; text-overflow: ellipsis; white-space: nowrap; }
+.student-shortcut > span { flex: 0 0 auto; font-size: .82rem; }
+.student-shortcut.empty { width: 38px; padding: 0; border-style: dashed; background: transparent; color: var(--ink-soft); font-size: 1rem; }
+.student-shortcut.shortcut-square { max-width: 40px; width: 40px; padding: 0; border-radius: 9px; }
+.student-shortcut.shortcut-square strong { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+.student-shortcut.shortcut-soft { border: 0; border-radius: 11px; box-shadow: 0 5px 14px rgba(22,50,79,.1); }
+.student-shortcut-settings { width: 34px; height: 34px; display: grid; flex: 0 0 auto; place-items: center; padding: 0; border: 1px solid var(--border); border-radius: 50%; background: var(--paper); cursor: pointer; font-size: .78rem; }
+.student-shortcut-settings.active { background: var(--navy); color: white; }
+.student-shortcut-editor { position: absolute; z-index: 70; top: calc(100% + 9px); right: 0; width: min(760px,calc(100vw - 28px)); padding: 12px; border: 1px solid var(--border); border-radius: 14px; background: var(--paper); box-shadow: var(--shadow); }
+.student-shortcut-editor > header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.student-shortcut-editor > header button { width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; background: var(--ivory); cursor: pointer; }
+.shortcut-edit-row { display: grid; grid-template-columns: 52px minmax(100px,.8fr) minmax(180px,1.4fr) 82px auto 36px 30px; align-items: center; gap: 5px; padding: 6px 0; border-top: 1px solid var(--border); }
+.shortcut-edit-row input,.shortcut-edit-row select { min-width: 0; min-height: 34px; padding: 5px 7px; border: 1px solid var(--border); border-radius: 8px; background: var(--paper); }
+.shortcut-colors { display: flex; gap: 3px; }
+.shortcut-colors button { width: 18px; height: 18px; padding: 0; border: 1px solid rgba(28,43,74,.15); border-radius: 50%; cursor: pointer; }
+.shortcut-custom-color { width: 34px; padding: 2px !important; }
+.shortcut-edit-row > .danger-text { width: 28px; height: 28px; padding: 0; border: 0; background: transparent; cursor: pointer; }
 .student-page .student-tabs { display: flex; grid-template-columns: none; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
 .student-page .student-tabs button { min-height: 34px; padding: 5px 11px; border-radius: 9px; font-size: .78rem; }
 .student-page .student-tabs span { min-width: 18px; height: 18px; margin-left: 5px; font-size: .65rem; }
@@ -579,6 +599,10 @@ button.explorer-open { cursor: pointer; }
   .student-page { padding-top: 12px; }
   .student-page .student-header { align-items: center; flex-direction: row; }
   .student-page .student-header .secondary-button { width: auto; }
+  .student-shortcut strong { display: none; }
+  .student-shortcut { width: 34px; min-width: 34px; padding: 0; }
+  .shortcut-edit-row { grid-template-columns: 46px 1fr 36px 28px; }
+  .shortcut-edit-row input[type="url"],.shortcut-edit-row select:nth-of-type(2),.shortcut-colors { grid-column: span 2; width: 100%; }
   .student-page .student-tabs { display: flex; grid-template-columns: none; }
   .student-page .student-folder-toolbar { align-items: center; flex-direction: row; }
 }

@@ -346,7 +346,7 @@ export async function POST(request: Request) {
       if (!setupCode || String(get(data, "setupCode") ?? "") !== setupCode) return json({ error: "Code de configuration incorrect." }, 403);
       if (!(await turnstile(request, String(get(data, "turnstileToken") ?? "") || null))) return json({ error: "Vérification de sécurité échouée." }, 400);
       const username = String(get(data, "username") ?? "").trim().toLowerCase(), password = String(get(data, "password") ?? ""), name = String(get(data, "displayName") ?? "").trim();
-      if (!/^[a-z0-9._@+-]{3,80}$/.test(username) || password.length < 12 || !name) return json({ error: "Utilisez un identifiant valide et un mot de passe d’au moins 12 caractères." }, 400);
+      if (!/^[a-z0-9._@+-]{3,80}$/.test(username) || !password || !name) return json({ error: "Identifiant, nom ou mot de passe manquant." }, 400);
       const hashed = await passwordHash(password);
       await env.DB.prepare(`INSERT INTO users(id,username,display_name,role,password_hash,password_salt,active,must_change_password,created_at) VALUES(?,?,?,?,?,?,1,0,?)`).bind(id(),username,name,"owner",hashed.hash,hashed.salt,now()).run();
       return json({ ok: true });
@@ -378,7 +378,7 @@ export async function POST(request: Request) {
       return json({ok:true},200,{"Set-Cookie":"monfrench_session=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0"});
     }
     if (action === "change_password") {
-      const password=String(get(data,"password")??""); if(password.length<10)return json({error:"Le mot de passe doit contenir au moins 10 caractères."},400);
+      const password=String(get(data,"password")??""); if(!password)return json({error:"Mot de passe requis."},400);
       const hashed=await passwordHash(password); await env.DB.prepare(`UPDATE users SET password_hash=?,password_salt=?,must_change_password=0,updated_at=? WHERE id=?`).bind(hashed.hash,hashed.salt,now(),current.id).run(); await env.DB.prepare(`DELETE FROM sessions WHERE user_id=? AND id_hash<>?`).bind(current.id,await sha256(cookie(request,"monfrench_session")!)).run(); return json({ok:true});
     }
     const studentActions=["open_assignment","get_progress","save_progress","complete_assignment","submit","create_student_folder","rename_student_folder","move_student_assignment","trash_student_folder"];
@@ -441,7 +441,7 @@ export async function POST(request: Request) {
     if (action === "create_student" || action === "create_teacher") {
       if (action === "create_teacher" && current.role !== "owner") return json({error:"Réservé à l’administrateur principal."},403);
       const username=String(get(data,"username")??"").trim().toLowerCase(),name=String(get(data,"displayName")??"").trim(),password=String(get(data,"password")??"");
-      if(!/^[a-z0-9._@+-]{3,80}$/.test(username)||!name||password.length<8)return json({error:"Identifiant invalide ou mot de passe temporaire trop court."},400);
+      if(!/^[a-z0-9._@+-]{3,80}$/.test(username)||!name||!password)return json({error:"Identifiant, nom ou mot de passe manquant."},400);
       const role:Role=action==="create_teacher"?"teacher":"student", userId=id(), hashed=await passwordHash(password),stamp=now(),folderId=role==="student"?(String(get(data,"folderId")??"")||null):null;
       const teacherId=role==="student"&&current.role==="owner"&&String(get(data,"teacherId")??"")?String(get(data,"teacherId")):current.id;
       if(role==="student"){const teacher=await env.DB.prepare(`SELECT 1 ok FROM users WHERE id=? AND role IN ('owner','teacher') AND active=1`).bind(teacherId).first();if(!teacher)return json({error:"Enseignant invalide."},400);}
@@ -454,7 +454,7 @@ export async function POST(request: Request) {
     if (["update_teacher","deactivate_teacher","reset_password","transfer_students"].includes(action)) {
       if (action === "update_teacher" || action === "deactivate_teacher" || action === "transfer_students") if(current.role!=="owner")return json({error:"Réservé à l’administrateur principal."},403);
       if(action==="reset_password"){
-        const userId=String(get(data,"userId")??""),password=String(get(data,"password")??""); if(password.length<8)return json({error:"Mot de passe trop court."},400);
+        const userId=String(get(data,"userId")??""),password=String(get(data,"password")??""); if(!password)return json({error:"Mot de passe requis."},400);
         const target=await env.DB.prepare(`SELECT role FROM users WHERE id=?`).bind(userId).first<{role:Role}>(); if(!target||target.role==="owner"&&userId!==current.id||current.role==="teacher"&&!(await ownsStudent(current,userId)))return json({error:"Accès refusé."},403);
         const hashed=await passwordHash(password);await env.DB.batch([env.DB.prepare(`UPDATE users SET password_hash=?,password_salt=?,must_change_password=1,updated_at=? WHERE id=?`).bind(hashed.hash,hashed.salt,now(),userId),env.DB.prepare(`DELETE FROM sessions WHERE user_id=?`).bind(userId)]);await audit(current,action,"user",userId);return json({ok:true});
       }

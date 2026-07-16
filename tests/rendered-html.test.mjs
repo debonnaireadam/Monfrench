@@ -45,12 +45,16 @@ test("build contains the portal and protected API routes", async () => {
 
 test("authentication uses keyed password hashes, server sessions and CSRF", async () => {
   const route = await readFile("app/api/portal/route.ts", "utf8");
+  const page = await readFile("app/page.tsx", "utf8");
   assert.match(route, /PASSWORD_PEPPER/);
   assert.match(route, /HMAC/);
   assert.match(route, /secureEqual/);
   assert.match(route, /HttpOnly; Secure; SameSite=Lax/);
   assert.match(route, /x-csrf-token/);
   assert.match(route, /siteverify/);
+  assert.doesNotMatch(route, /password\.length\s*</);
+  assert.doesNotMatch(page, /minLength=/);
+  assert.match(route, /if\(!password\)/);
 });
 
 test("private files require ownership or assignment access", async () => {

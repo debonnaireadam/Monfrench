@@ -25,6 +25,10 @@ test("build contains the portal and protected API routes", async () => {
   assert.match(page, /Corbeille/);
   assert.match(page, /Corrections/);
   assert.match(page, /Accéder à l’activité en ligne/);
+  assert.match(page, /Toutes les sections/);
+  assert.match(page, /setTab\(item\.tab\)/);
+  assert.match(page, /activity-preview-button/);
+  assert.match(page, /compact onClose/);
   assert.match(page, /Google Drive ↔ MonFrench/);
   assert.match(page, /Télécharger l’activité/);
   assert.match(page, /Marquer comme révisé/);

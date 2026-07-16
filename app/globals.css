@@ -162,10 +162,21 @@ h3 { font-size: 1.15rem; line-height: 1.3; }
 .teacher-page-header p:last-child { margin-bottom: 0; }
 .header-actions { display: flex; gap: 10px; }
 .stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 26px; }
-.stat-grid article { padding: 22px; border: 1px solid var(--border); border-radius: 14px; background: white; }
+.stat-grid article, .stat-grid .stat-link { position: relative; padding: 22px; border: 1px solid var(--border); border-radius: 14px; background: white; color: var(--navy); text-align: left; }
+.stat-grid .stat-link { cursor: pointer; transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+.stat-grid .stat-link:hover, .stat-grid .stat-link:focus-visible { transform: translateY(-3px); border-color: #9cafbf; box-shadow: 0 12px 28px rgba(22,50,79,.09); outline: none; }
+.stat-grid .stat-link i { position: absolute; right: 20px; bottom: 18px; color: var(--blue); font-style: normal; font-weight: 900; }
 .stat-grid strong, .stat-grid span { display: block; }
 .stat-grid strong { margin-bottom: 5px; font-family: var(--font-display); font-size: 2rem; }
 .stat-grid span { color: var(--ink-soft); font-size: 0.84rem; }
+.dashboard-destinations { margin-top: 28px; }
+.destination-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; }
+.destination-grid button { position: relative; min-height: 126px; display: grid; align-content: end; gap: 4px; padding: 19px; border: 1px solid var(--border); border-radius: 14px; background: white; color: var(--navy); text-align: left; cursor: pointer; transition: transform .18s ease, background .18s ease, box-shadow .18s ease; }
+.destination-grid button:hover, .destination-grid button:focus-visible { transform: translateY(-3px); background: #f7f4ed; box-shadow: 0 12px 28px rgba(22,50,79,.08); outline: none; }
+.destination-grid button > span { position: absolute; top: 16px; left: 19px; color: var(--terracotta); font-size: .7rem; font-weight: 900; letter-spacing: .1em; }
+.destination-grid button strong { font-family: var(--font-display); font-size: 1.25rem; }
+.destination-grid button small { color: var(--ink-soft); }
+.destination-grid button i { position: absolute; top: 15px; right: 18px; color: var(--blue); font-style: normal; font-weight: 900; }
 .teacher-columns { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(290px, 0.8fr); gap: 18px; }
 .teacher-panel { padding: 24px; border: 1px solid var(--border); border-radius: 16px; background: white; }
 .panel-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; margin-bottom: 18px; }
@@ -245,6 +256,7 @@ h3 { font-size: 1.15rem; line-height: 1.3; }
 @media (max-width: 1080px) {
   .library-grid { grid-template-columns: repeat(2, minmax(260px, 1fr)); }
   .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .destination-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .student-admin-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
@@ -348,8 +360,12 @@ button.explorer-open { cursor: pointer; }
 .correction-return-form { display: grid; gap: 11px; margin: 2px 0 14px !important; }
 .correction-return-form textarea { min-height: 92px; resize: vertical; }
 .correction-return-form input[type="file"] { background: #fbfaf7; }
+.activity-preview-button { align-self: flex-start; display: inline-flex; align-items: center; gap: 7px; margin: 0 0 14px; padding: 8px 13px; border: 1px solid #aebdca; border-radius: 999px; background: #f3f7fa; color: var(--navy); cursor: pointer; font-size: .78rem; font-weight: 850; }
+.activity-preview-button:hover, .activity-preview-button:focus-visible { border-color: var(--blue); background: #e8f0f6; outline: none; }
 .file-viewer-backdrop { z-index: 95; padding: 24px; }
 .file-viewer { width: min(1180px,100%); height: min(900px,calc(100vh - 48px)); display: grid; grid-template-rows: auto 1fr; overflow: hidden; border-radius: 16px; background: white; box-shadow: var(--shadow); }
+.file-viewer.compact { width: min(760px,calc(100vw - 48px)); height: min(610px,calc(100vh - 72px)); }
+.file-viewer.compact header { min-height: 72px; }
 .file-viewer > header { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 15px 18px; border-bottom: 1px solid var(--border); }
 .file-viewer > header h2 { margin: 0; font-size: 1.35rem; }
 .file-viewer > header .eyebrow { margin-bottom: 2px; }
@@ -554,6 +570,8 @@ button.explorer-open { cursor: pointer; }
 
 @media (max-width: 680px) {
   .teacher-sidebar nav { grid-template-columns: none; }
+  .destination-grid { grid-template-columns: 1fr; }
+  .file-viewer.compact { width: 100%; height: 100vh; }
   .home-guidance, .selection-bar { align-items: stretch; flex-direction: column; }
   .privacy-callout { max-width: none; }
   .drive-toolbar { grid-template-columns: auto minmax(0,1fr) auto; }

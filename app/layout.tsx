@@ -10,11 +10,11 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     metadataBase,
-    title: "MonFrench — Vos activités, au bon endroit",
-    description: "Un espace simple où l’enseignant organise ses activités de français et envoie à chaque élève uniquement le travail choisi.",
+    title: "MonFrench — Château de verre",
+    description: "Un espace privé et simple pour apprendre, assigner et corriger des activités de français.",
     openGraph: {
       title: "MonFrench",
-      description: "Votre espace de français, simplement.",
+      description: "Château de verre — votre espace de français, simplement.",
       type: "website",
       locale: "fr_CA",
       images: [{ url: "/og.png", width: 1200, height: 630, alt: "MonFrench — Votre espace de français, simplement." }],
@@ -22,7 +22,7 @@ export async function generateMetadata(): Promise<Metadata> {
     twitter: {
       card: "summary_large_image",
       title: "MonFrench",
-      description: "Votre espace de français, simplement.",
+      description: "Château de verre — votre espace de français, simplement.",
       images: ["/og.png"],
     },
   };

@@ -555,14 +555,27 @@ button.explorer-open { cursor: pointer; }
 .student-page .student-tabs { display: flex; grid-template-columns: none; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
 .student-page .student-tabs button { min-height: 34px; padding: 5px 11px; border-radius: 9px; font-size: .78rem; }
 .student-page .student-tabs span { min-width: 18px; height: 18px; margin-left: 5px; font-size: .65rem; }
+.homework-view-controls { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin: -42px 0 8px auto; }
+.homework-view-controls > div { display: flex; padding: 3px; border: 1px solid var(--border); border-radius: 9px; background: var(--paper); }
+.homework-view-controls button { min-height: 28px; padding: 3px 9px; border: 0; border-radius: 6px; background: transparent; cursor: pointer; font-size: .72rem; font-weight: 800; }
+.homework-view-controls button.active { background: var(--navy); color: white; }
+.homework-view-controls label { min-height: 34px; display: flex; align-items: center; gap: 7px; padding: 4px 9px; border: 1px solid var(--border); border-radius: 9px; background: var(--paper); font-size: .7rem; font-weight: 800; }
+.homework-view-controls input { width: 90px; accent-color: var(--navy); }
+.homework-view-controls strong { min-width: 34px; color: var(--ink-soft); }
 .student-page .student-folder-toolbar { min-height: 26px; margin-bottom: 7px; }
 .student-page .student-folder-toolbar .breadcrumbs { min-height: 26px; }
 .student-page .assignment-grid { gap: 10px; }
+.student-homework-grid.tiles { grid-template-columns: repeat(auto-fit,minmax(clamp(220px,calc(300px * var(--homework-size,1)),460px),1fr)); }
+.student-homework-grid.list { grid-template-columns: 1fr; }
+.student-homework-grid .assignment-card { min-height: calc(270px * var(--homework-size,1)); padding: calc(18px * var(--homework-size,1)); }
+.student-homework-grid.list .assignment-card { min-height: 0; }
 @media (max-width: 680px) {
   .student-page { padding-top: 12px; }
   .student-page .student-header { align-items: center; flex-direction: row; }
   .student-page .student-header .secondary-button { width: auto; }
   .student-page .student-tabs { display: flex; grid-template-columns: none; }
+  .homework-view-controls { align-items: stretch; flex-direction: column; margin: 0 0 8px; }
+  .homework-view-controls label { justify-content: space-between; }
   .student-page .student-folder-toolbar { align-items: center; flex-direction: row; }
 }
 /* Functional portal forms */

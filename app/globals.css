@@ -442,6 +442,27 @@ button.explorer-open { cursor: pointer; }
 .privacy-callout strong, .privacy-callout span { display: block; }
 .privacy-callout span { margin-top: 4px; color: #315a46; font-size: .82rem; }
 .create-panel { margin-bottom: 26px; box-shadow: 0 10px 30px rgba(22,50,79,.04); }
+.batch-drop-panel { display: grid; gap: 20px; margin-bottom: 26px; box-shadow: 0 10px 30px rgba(22,50,79,.04); }
+.batch-drop-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.batch-drop-heading h2 { margin: 2px 0 6px; }
+.batch-drop-heading p:last-child { margin: 0; color: var(--ink-soft); }
+.batch-common-fields { display: grid; grid-template-columns: minmax(150px,.55fr) repeat(2,minmax(220px,1fr)); gap: 14px; }
+.batch-common-fields label { display: grid; align-content: start; gap: 7px; font-weight: 800; }
+.batch-common-fields textarea { min-height: 92px; resize: vertical; }
+.batch-drop-zone { position: relative; min-height: 190px; display: grid; place-items: center; align-content: center; gap: 7px; padding: 28px; border: 2px dashed #aabac7; border-radius: 16px; background: #f7f8f6; color: var(--navy); text-align: center; cursor: pointer; transition: border-color .18s ease, background .18s ease, transform .18s ease; }
+.batch-drop-zone:hover, .batch-drop-zone.dragging, .batch-drop-zone:focus-within { transform: translateY(-2px); border-color: var(--blue); background: #edf4f8; }
+.batch-drop-zone input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.batch-drop-zone small { color: var(--ink-soft); }
+.batch-drop-icon { width: 45px; height: 45px; display: grid; place-items: center; border-radius: 50%; background: var(--navy); color: white; font-size: 1.35rem; font-weight: 900; }
+.batch-file-list { overflow: hidden; border: 1px solid var(--border); border-radius: 13px; background: white; }
+.batch-file-list > div { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 4px 16px; padding: 11px 14px; border-top: 1px solid var(--border); }
+.batch-file-list > div:first-child { display: flex; justify-content: space-between; border-top: 0; background: #f4f1e9; }
+.batch-file-list span, .batch-file-list small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.batch-file-list small { grid-column: 1; color: var(--ink-soft); }
+.batch-file-list > div > button { grid-column: 2; grid-row: 1 / span 2; }
+.batch-progress { display: grid; grid-template-columns: minmax(140px,auto) minmax(140px,1fr) auto; align-items: center; gap: 12px; color: var(--ink-soft); font-size: .82rem; }
+.batch-progress > div { height: 8px; overflow: hidden; border-radius: 999px; background: #dfe6ea; }
+.batch-progress i { height: 100%; display: block; border-radius: inherit; background: var(--blue); transition: width .18s ease; }
 
 .breadcrumbs { display: flex; align-items: center; gap: 9px; min-height: 32px; margin: -8px 0 12px; color: var(--ink-soft); font-size: .84rem; }
 .breadcrumbs button { border: 0; padding: 4px 0; background: transparent; color: var(--blue); cursor: pointer; font-weight: 800; }
@@ -565,12 +586,18 @@ button.explorer-open { cursor: pointer; }
   .drive-toolbar > select { display: none; }
   .folder-grid { grid-template-columns: repeat(2,minmax(150px,1fr)); }
   .admin-grid { grid-template-columns: 1fr; }
+  .batch-common-fields { grid-template-columns: 1fr; }
   .manager-items.list .managed-meta { grid-template-columns: repeat(2,minmax(90px,1fr)); }
 }
 
 @media (max-width: 680px) {
   .teacher-sidebar nav { grid-template-columns: none; }
   .destination-grid { grid-template-columns: 1fr; }
+  .batch-drop-heading { flex-direction: column; }
+  .batch-drop-zone { min-height: 155px; }
+  .batch-file-list > div { grid-template-columns: minmax(0,1fr) auto; }
+  .batch-progress { grid-template-columns: 1fr auto; }
+  .batch-progress > div { grid-column: 1 / -1; grid-row: 2; }
   .file-viewer.compact { width: 100%; height: 100vh; }
   .home-guidance, .selection-bar { align-items: stretch; flex-direction: column; }
   .privacy-callout { max-width: none; }

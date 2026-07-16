@@ -40,10 +40,17 @@ export default function Home(){
   if(!portal.authenticated)return <Login setup={!!portal.setupRequired} turnstileSiteKey={portal.turnstileSiteKey} error={error} busy={busy} onSend={send}/>;
   if(portal.user?.must_change_password)return <PasswordChange error={error} busy={busy} onSend={send}/>;
   const staff=portal.user?.role==="owner"||portal.user?.role==="teacher";
-  return <main className="site-shell"><header className="preview-bar"><BrandMark compact/><p><strong>{portal.user?.display_name}</strong><span>{portal.user?.role==="owner"?"Admin":portal.user?.role==="teacher"?"Enseignant":"Élève"}</span></p><button className="text-button" onClick={()=>send({action:"logout"})}>Déconnexion</button></header>{error&&<div className="toast">{error}</div>}{staff?<Teacher portal={portal} tab={tab} setTab={setTab} send={send} busy={busy} refresh={load}/>:<Student portal={portal} send={send} busy={busy} refresh={load}/>}</main>;
+  return <main className="site-shell"><header className="preview-bar"><BrandMark compact/><p><strong>{portal.user?.display_name}</strong><span>{portal.user?.role==="owner"?"Admin":portal.user?.role==="teacher"?"Enseignant":"Élève"}</span></p><div className="preview-actions"><DisplaySettings/><button className="text-button" onClick={()=>send({action:"logout"})}>Déconnexion</button></div></header>{error&&<div className="toast">{error}</div>}{staff?<Teacher portal={portal} tab={tab} setTab={setTab} send={send} busy={busy} refresh={load}/>:<Student portal={portal} send={send} busy={busy} refresh={load}/>}</main>;
 }
 
 function BrandMark({compact=false}:{compact?:boolean}){return <div className={`brand-lockup${compact?" compact":""}`} aria-label="MonFrench"><span className="fleur" aria-hidden="true">⚜</span><strong>Mon<span>French</span></strong></div>}
+
+function DisplaySettings(){
+  const [theme,setTheme]=useState<"light"|"dark">("light"),[scale,setScale]=useState<"small"|"normal"|"large">("normal"),[ready,setReady]=useState(false);
+  useEffect(()=>{const savedTheme=localStorage.getItem("monfrench-theme")==="dark"?"dark":"light",savedScale=localStorage.getItem("monfrench-scale"),nextScale=savedScale==="small"||savedScale==="large"?savedScale:"normal";setTheme(savedTheme);setScale(nextScale);document.documentElement.dataset.theme=savedTheme;document.documentElement.dataset.scale=nextScale;setReady(true);},[]);
+  useEffect(()=>{if(!ready)return;document.documentElement.dataset.theme=theme;document.documentElement.dataset.scale=scale;localStorage.setItem("monfrench-theme",theme);localStorage.setItem("monfrench-scale",scale);},[theme,scale,ready]);
+  return <details className="display-settings"><summary>Affichage</summary><div className="display-settings-panel"><fieldset><legend>Taille</legend><div>{([["small","S"],["normal","M"],["large","L"]] as const).map(([value,label])=><button type="button" key={value} className={scale===value?"active":""} aria-pressed={scale===value} onClick={()=>setScale(value)}>{label}</button>)}</div></fieldset><fieldset><legend>Thème</legend><div><button type="button" className={theme==="light"?"active":""} aria-pressed={theme==="light"} onClick={()=>setTheme("light")}>Clair</button><button type="button" className={theme==="dark"?"active":""} aria-pressed={theme==="dark"} onClick={()=>setTheme("dark")}>Sombre</button></div></fieldset></div></details>;
+}
 
 function TurnstileWidget({siteKey,onToken}:{siteKey?:string|null;onToken:(token:string)=>void}){
   const containerRef=useRef<HTMLDivElement>(null);

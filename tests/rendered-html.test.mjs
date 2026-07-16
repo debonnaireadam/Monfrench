@@ -29,6 +29,11 @@ test("build contains the portal and protected API routes", async () => {
   assert.match(page, /teacher-section-grid/);
   assert.match(page, /teacher-home-link/);
   assert.doesNotMatch(page, /teacher-sidebar/);
+  assert.match(page, /DisplaySettings/);
+  assert.match(page, /monfrench-theme/);
+  assert.match(page, /monfrench-scale/);
+  assert.match(page, /Clair/);
+  assert.match(page, /Sombre/);
   assert.match(page, /activity-preview-button/);
   assert.match(page, /compact onClose/);
   assert.match(page, /Dépôt multiple/);
@@ -55,6 +60,15 @@ test("authentication uses keyed password hashes, server sessions and CSRF", asyn
   assert.doesNotMatch(route, /password\.length\s*</);
   assert.doesNotMatch(page, /minLength=/);
   assert.match(route, /if\(!password\)/);
+});
+
+test("display preferences offer persistent size and light or dark themes", async () => {
+  const css = await readFile("app/globals.css", "utf8");
+  assert.match(css, /html\[data-scale="small"\]/);
+  assert.match(css, /html\[data-scale="normal"\]/);
+  assert.match(css, /html\[data-scale="large"\]/);
+  assert.match(css, /html\[data-theme="dark"\]/);
+  assert.match(css, /color-scheme: dark/);
 });
 
 test("private files require ownership or assignment access", async () => {

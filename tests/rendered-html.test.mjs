@@ -46,6 +46,9 @@ test("build contains the portal and protected API routes", async () => {
   assert.match(page, /tile-palette/);
   assert.match(page, /type="color"/);
   assert.match(page, /#F7D6E0/);
+  assert.match(page, /title="Ouvrir dans un nouvel onglet"/);
+  assert.match(page, /target="_blank"/);
+  assert.doesNotMatch(page, /window\.open\(item\.url/);
   assert.match(page, /Clair/);
   assert.match(page, /Sombre/);
   assert.match(page, /activity-preview-button/);

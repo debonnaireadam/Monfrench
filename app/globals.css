@@ -215,14 +215,25 @@ button, input, textarea, select { font-size: calc(1em * var(--control-scale)); }
 .dashboard-tile.tile-medium { grid-column: span 1; }
 .dashboard-tile.tile-large { grid-column: span 2; }
 .dashboard-tile-main { position: relative; width: 100%; min-height: inherit; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; padding: calc(20px * var(--spacing-scale) * var(--tile-scale, .8)); border: 0; border-radius: inherit; background: transparent; color: inherit; cursor: pointer; text-align: left; }
-.dashboard-tile-main .tile-text-small { font-size: calc(clamp(1.3rem,1.7vw,1.75rem) * var(--tile-scale, .8)); }
-.dashboard-tile-main .tile-text-medium { font-size: calc(clamp(1.65rem,2.1vw,2.25rem) * var(--tile-scale, .8)); }
-.dashboard-tile-main .tile-text-large { font-size: calc(clamp(2.2rem,2.8vw,3.2rem) * var(--tile-scale, .8)); }
+.dashboard-tile-main .tile-text-small { font-size: calc(clamp(1.3rem,1.7vw,1.75rem) * var(--tile-scale, .8) * var(--tile-title-scale,1)); }
+.dashboard-tile-main .tile-text-medium { font-size: calc(clamp(1.65rem,2.1vw,2.25rem) * var(--tile-scale, .8) * var(--tile-title-scale,1)); }
+.dashboard-tile-main .tile-text-large { font-size: calc(clamp(2.2rem,2.8vw,3.2rem) * var(--tile-scale, .8) * var(--tile-title-scale,1)); }
+.dashboard-tile.design-soft { border: 0; box-shadow: 0 12px 30px rgba(22,50,79,.11); }
+.dashboard-tile.design-outline { border: 3px solid color-mix(in srgb,currentColor 36%,transparent); box-shadow: none; }
+.dashboard-tile.design-glass { border: 1px solid rgba(255,255,255,.58); background-color: color-mix(in srgb,var(--paper) 66%,transparent); box-shadow: 0 16px 38px rgba(22,50,79,.12); backdrop-filter: blur(14px); }
 .dashboard-size-control { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; padding: 7px 11px; border: 1px solid var(--border); border-radius: 11px; background: var(--paper); font-size: .76rem; font-weight: 800; }
 .dashboard-size-control input { width: 120px; accent-color: var(--blue); }
 .dashboard-size-control strong { min-width: 38px; color: var(--ink-soft); }
 .tile-editor { position: relative; z-index: 2; display: flex; flex-wrap: wrap; gap: 5px; padding: 8px; border-top: 1px solid var(--border); background: var(--paper); }
 .tile-editor button { min-height: 32px; padding: 5px 8px; border: 1px solid var(--border); border-radius: 7px; background: var(--ivory); cursor: pointer; font-size: .7rem; font-weight: 750; }
+.tile-title-control { flex: 1 1 220px; display: grid; grid-template-columns: auto minmax(90px,1fr) auto; align-items: center; gap: 7px; min-height: 36px; padding: 5px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--ivory); font-size: .7rem; font-weight: 800; }
+.tile-title-control input { width: 100%; accent-color: var(--blue); }
+.tile-select-control, .tile-color-picker { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 5px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--ivory); font-size: .7rem; font-weight: 800; }
+.tile-select-control select { min-height: 27px; padding: 2px 24px 2px 6px; border: 0; background: var(--paper); }
+.tile-palette { display: inline-flex; align-items: center; gap: 5px; min-height: 36px; padding: 5px 7px; border: 1px solid var(--border); border-radius: 8px; background: var(--ivory); }
+.tile-palette button { width: 25px; height: 25px; min-height: 0; padding: 0; border: 2px solid rgba(28,43,74,.18); border-radius: 50%; }
+.tile-palette button:hover { transform: scale(1.12); border-color: var(--navy); }
+.tile-color-picker input[type="color"] { width: 30px; height: 26px; padding: 1px; border: 0; border-radius: 6px; cursor: pointer; }
 .tile-resize-handle { position: absolute; z-index: 4; right: 6px; bottom: 6px; width: 34px; height: 34px; display: grid; place-items: center; padding: 0; border: 1px solid var(--terracotta); border-radius: 9px; background: var(--paper); color: var(--navy); cursor: nwse-resize; font-size: 1rem; font-weight: 900; touch-action: none; }
 .teacher-columns { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(290px, 0.8fr); gap: 18px; }
 .teacher-panel { padding: 24px; border: 1px solid var(--border); border-radius: 16px; background: white; }

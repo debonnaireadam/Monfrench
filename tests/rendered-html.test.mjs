@@ -41,6 +41,11 @@ test("build contains the portal and protected API routes", async () => {
   assert.match(page, /tile-resize-handle/);
   assert.match(page, /dashboard-size-control/);
   assert.match(page, /-tile-scale/);
+  assert.match(page, /tile-title-control/);
+  assert.match(page, /tile-select-control/);
+  assert.match(page, /tile-palette/);
+  assert.match(page, /type="color"/);
+  assert.match(page, /#F7D6E0/);
   assert.match(page, /Clair/);
   assert.match(page, /Sombre/);
   assert.match(page, /activity-preview-button/);

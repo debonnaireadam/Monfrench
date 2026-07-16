@@ -386,26 +386,30 @@ export async function POST(request: Request) {
     const studentActions=["open_assignment","get_progress","save_progress","complete_assignment","submit","create_student_folder","rename_student_folder","move_student_assignment","trash_student_folder"];
     if (!staff(current) && !studentActions.includes(action)) return json({error:"Réservé à l’enseignant."},403);
 
-    if(!staff(current)&&action==="create_student_folder"){
+    if(action==="create_student_folder"){
+      const studentId=staff(current)?String(get(data,"studentId")??""):current.id;if(staff(current)&&!await ownsStudent(current,studentId))return json({error:"Accès refusé."},403);
       const name=String(get(data,"name")??"").trim(),parentId=String(get(data,"parentId")??"")||null;
       if(!name||name.length>120)return json({error:"Nom de dossier invalide."},400);
-      if(parentId&&!await env.DB.prepare(`SELECT 1 ok FROM folders WHERE id=? AND scope='student' AND created_by=? AND trashed_at IS NULL`).bind(parentId,current.id).first())return json({error:"Dossier parent invalide."},400);
-      const folderId=id();await env.DB.prepare(`INSERT INTO folders(id,name,scope,parent_id,created_by,created_at) VALUES(?,?,'student',?,?,?)`).bind(folderId,name,parentId,current.id,now()).run();return json({ok:true,id:folderId});
+      if(parentId&&!await env.DB.prepare(`SELECT 1 ok FROM folders WHERE id=? AND scope='student' AND created_by=? AND trashed_at IS NULL`).bind(parentId,studentId).first())return json({error:"Dossier parent invalide."},400);
+      const folderId=id();await env.DB.prepare(`INSERT INTO folders(id,name,scope,parent_id,created_by,created_at) VALUES(?,?,'student',?,?,?)`).bind(folderId,name,parentId,studentId,now()).run();return json({ok:true,id:folderId});
     }
-    if(!staff(current)&&action==="rename_student_folder"){
+    if(action==="rename_student_folder"){
+      const studentId=staff(current)?String(get(data,"studentId")??""):current.id;if(staff(current)&&!await ownsStudent(current,studentId))return json({error:"Accès refusé."},403);
       const folderId=String(get(data,"folderId")??""),name=String(get(data,"name")??"").trim();if(!folderId||!name||name.length>120)return json({error:"Dossier invalide."},400);
-      const result=await env.DB.prepare(`UPDATE folders SET name=?,updated_at=? WHERE id=? AND scope='student' AND created_by=? AND trashed_at IS NULL`).bind(name,now(),folderId,current.id).run();if(!result.meta.changes)return json({error:"Dossier introuvable."},404);return json({ok:true});
+      const result=await env.DB.prepare(`UPDATE folders SET name=?,updated_at=? WHERE id=? AND scope='student' AND created_by=? AND trashed_at IS NULL`).bind(name,now(),folderId,studentId).run();if(!result.meta.changes)return json({error:"Dossier introuvable."},404);return json({ok:true});
     }
-    if(!staff(current)&&action==="move_student_assignment"){
+    if(action==="move_student_assignment"){
+      const studentId=staff(current)?String(get(data,"studentId")??""):current.id;if(staff(current)&&!await ownsStudent(current,studentId))return json({error:"Accès refusé."},403);
       const assignmentId=String(get(data,"assignmentId")??""),folderId=String(get(data,"folderId")??"")||null;
-      if(!await env.DB.prepare(`SELECT 1 ok FROM assignment_students ast JOIN assignments a ON a.id=ast.assignment_id WHERE ast.assignment_id=? AND ast.student_id=? AND a.status='published' AND a.trashed_at IS NULL`).bind(assignmentId,current.id).first())return json({error:"Devoir introuvable."},404);
-      if(folderId&&!await env.DB.prepare(`SELECT 1 ok FROM folders WHERE id=? AND scope='student' AND created_by=? AND trashed_at IS NULL`).bind(folderId,current.id).first())return json({error:"Dossier invalide."},400);
-      await env.DB.prepare(`INSERT INTO student_assignment_folders(assignment_id,student_id,folder_id,updated_at) VALUES(?,?,?,?) ON CONFLICT(assignment_id,student_id) DO UPDATE SET folder_id=excluded.folder_id,updated_at=excluded.updated_at`).bind(assignmentId,current.id,folderId,now()).run();return json({ok:true});
+      if(!await env.DB.prepare(`SELECT 1 ok FROM assignment_students ast JOIN assignments a ON a.id=ast.assignment_id WHERE ast.assignment_id=? AND ast.student_id=? AND a.status='published' AND a.trashed_at IS NULL`).bind(assignmentId,studentId).first())return json({error:"Devoir introuvable."},404);
+      if(folderId&&!await env.DB.prepare(`SELECT 1 ok FROM folders WHERE id=? AND scope='student' AND created_by=? AND trashed_at IS NULL`).bind(folderId,studentId).first())return json({error:"Dossier invalide."},400);
+      await env.DB.prepare(`INSERT INTO student_assignment_folders(assignment_id,student_id,folder_id,updated_at) VALUES(?,?,?,?) ON CONFLICT(assignment_id,student_id) DO UPDATE SET folder_id=excluded.folder_id,updated_at=excluded.updated_at`).bind(assignmentId,studentId,folderId,now()).run();return json({ok:true});
     }
-    if(!staff(current)&&action==="trash_student_folder"){
+    if(action==="trash_student_folder"){
+      const studentId=staff(current)?String(get(data,"studentId")??""):current.id;if(staff(current)&&!await ownsStudent(current,studentId))return json({error:"Accès refusé."},403);
       const folderId=String(get(data,"folderId")??"");if(!folderId)return json({error:"Dossier invalide."},400);
-      const owned=await env.DB.prepare(`SELECT 1 ok FROM folders WHERE id=? AND scope='student' AND created_by=? AND trashed_at IS NULL`).bind(folderId,current.id).first();if(!owned)return json({error:"Dossier introuvable."},404);
-      const stamp=now();await env.DB.batch([env.DB.prepare(`WITH RECURSIVE tree(id) AS (SELECT id FROM folders WHERE id=? AND scope='student' AND created_by=? UNION ALL SELECT f.id FROM folders f JOIN tree t ON f.parent_id=t.id WHERE f.scope='student' AND f.created_by=?) UPDATE student_assignment_folders SET folder_id=NULL,updated_at=? WHERE student_id=? AND folder_id IN (SELECT id FROM tree)`).bind(folderId,current.id,current.id,stamp,current.id),env.DB.prepare(`WITH RECURSIVE tree(id) AS (SELECT id FROM folders WHERE id=? AND scope='student' AND created_by=? UNION ALL SELECT f.id FROM folders f JOIN tree t ON f.parent_id=t.id WHERE f.scope='student' AND f.created_by=?) UPDATE folders SET trashed_at=?,updated_at=? WHERE id IN (SELECT id FROM tree)`).bind(folderId,current.id,current.id,stamp,stamp)]);return json({ok:true});
+      const owned=await env.DB.prepare(`SELECT 1 ok FROM folders WHERE id=? AND scope='student' AND created_by=? AND trashed_at IS NULL`).bind(folderId,studentId).first();if(!owned)return json({error:"Dossier introuvable."},404);
+      const stamp=now();await env.DB.batch([env.DB.prepare(`WITH RECURSIVE tree(id) AS (SELECT id FROM folders WHERE id=? AND scope='student' AND created_by=? UNION ALL SELECT f.id FROM folders f JOIN tree t ON f.parent_id=t.id WHERE f.scope='student' AND f.created_by=?) UPDATE student_assignment_folders SET folder_id=NULL,updated_at=? WHERE student_id=? AND folder_id IN (SELECT id FROM tree)`).bind(folderId,studentId,studentId,stamp,studentId),env.DB.prepare(`WITH RECURSIVE tree(id) AS (SELECT id FROM folders WHERE id=? AND scope='student' AND created_by=? UNION ALL SELECT f.id FROM folders f JOIN tree t ON f.parent_id=t.id WHERE f.scope='student' AND f.created_by=?) UPDATE folders SET trashed_at=?,updated_at=? WHERE id IN (SELECT id FROM tree)`).bind(folderId,studentId,studentId,stamp,stamp)]);return json({ok:true});
     }
 
     if(staff(current)&&action==="view_student_space"){

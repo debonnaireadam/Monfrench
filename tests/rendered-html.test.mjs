@@ -31,7 +31,10 @@ test("build contains the portal and protected API routes", async () => {
   assert.doesNotMatch(page, /teacher-sidebar/);
   assert.match(page, /DisplaySettings/);
   assert.match(page, /monfrench-theme/);
-  assert.match(page, /monfrench-scale/);
+  assert.match(page, /monfrench-display/);
+  assert.match(page, /type="range"/);
+  assert.match(page, /Personnaliser/);
+  assert.match(page, /\+ Raccourci/);
   assert.match(page, /Clair/);
   assert.match(page, /Sombre/);
   assert.match(page, /activity-preview-button/);
@@ -65,11 +68,13 @@ test("authentication uses keyed password hashes, server sessions and CSRF", asyn
   assert.match(route, /if\(!password\)/);
 });
 
-test("display preferences offer persistent size and light or dark themes", async () => {
+test("display preferences offer continuous typography controls and themes", async () => {
   const css = await readFile("app/globals.css", "utf8");
-  assert.match(css, /html\[data-scale="small"\]/);
-  assert.match(css, /html\[data-scale="normal"\]/);
-  assert.match(css, /html\[data-scale="large"\]/);
+  assert.match(css, /--interface-scale/);
+  assert.match(css, /--heading-scale/);
+  assert.match(css, /--reading-scale/);
+  assert.match(css, /--control-scale/);
+  assert.match(css, /--spacing-scale/);
   assert.match(css, /html\[data-theme="dark"\]/);
   assert.match(css, /color-scheme: dark/);
 });

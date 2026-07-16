@@ -35,6 +35,9 @@ test("build contains the portal and protected API routes", async () => {
   assert.match(page, /Clair/);
   assert.match(page, /Sombre/);
   assert.match(page, /activity-preview-button/);
+  assert.ok((page.match(/label:"Aperçu"/g) || []).length >= 3);
+  assert.match(page, /popup,width=1100,height=800/);
+  assert.match(page, />Aperçu<\/button>/);
   assert.match(page, /compact onClose/);
   assert.match(page, /Dépôt multiple/);
   assert.match(page, /multiple onChange/);

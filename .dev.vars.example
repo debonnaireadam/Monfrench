@@ -1,0 +1,3 @@
+# Generate unique, high-entropy values for local or staging use.
+TEACHER_SETUP_CODE=replace-with-a-one-time-setup-code
+PASSWORD_PEPPER=replace-with-a-long-random-secret

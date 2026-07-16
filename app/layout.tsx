@@ -17,13 +17,11 @@ export async function generateMetadata(): Promise<Metadata> {
       description: "Château de verre — votre espace de français, simplement.",
       type: "website",
       locale: "fr_CA",
-      images: [{ url: "/og.png", width: 1200, height: 630, alt: "MonFrench — Votre espace de français, simplement." }],
     },
     twitter: {
-      card: "summary_large_image",
+      card: "summary",
       title: "MonFrench",
       description: "Château de verre — votre espace de français, simplement.",
-      images: ["/og.png"],
     },
   };
 }

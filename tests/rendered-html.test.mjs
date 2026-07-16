@@ -24,9 +24,11 @@ test("build contains the portal and protected API routes", async () => {
   assert.match(page, /Envoyer aux élèves/);
   assert.match(page, /Corbeille/);
   assert.match(page, /Corrections/);
-  assert.match(page, /Faire l’activité en ligne/);
+  assert.match(page, /Accéder à l’activité en ligne/);
   assert.match(page, /Google Drive ↔ MonFrench/);
-  assert.match(page, /Envoyer la correction à l’élève/);
+  assert.match(page, /Télécharger l’activité/);
+  assert.match(page, /Marquer comme révisé/);
+  assert.doesNotMatch(page, /Joindre un fichier corrigé/);
   assert.match(page, /Voir l’espace de l’élève/);
 });
 
@@ -182,7 +184,10 @@ test("Glassbook work is shared and completion creates no PDF", async () => {
   assert.match(route, /UPDATE student_work SET status='submitted'/);
   assert.match(route, /expectedStateVersion/);
   assert.match(page, /teacherMode/);
+  assert.match(page, /onlineGlassbook&&!readOnly/);
+  assert.match(page, /Accéder à l’activité en ligne/);
   assert.match(page, /Travail terminé/);
+  assert.doesNotMatch(page, /Faire l’activité en ligne/);
   assert.doesNotMatch(page, /build-submission-pdf/);
 });
 

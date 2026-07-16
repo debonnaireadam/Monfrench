@@ -357,6 +357,21 @@ button.explorer-open { cursor: pointer; }
 .file-viewer > header a { text-decoration: none; }
 .file-viewer iframe { width: 100%; height: 100%; border: 0; background: #f5f2ea; }
 
+/* Immersive student activity viewer */
+.immersive-player{position:fixed;inset:0;z-index:1000;display:grid;grid-template-rows:54px minmax(0,1fr) 64px;max-width:none;margin:0;padding:0;background:#eef1f5;color:var(--ink)}
+.immersive-player-bar{display:grid;grid-template-columns:minmax(92px,1fr) minmax(0,2fr) minmax(92px,1fr);align-items:center;gap:12px;padding:0 18px;border-bottom:1px solid var(--border);background:#fff}
+.immersive-player-bar strong{overflow:hidden;text-align:center;text-overflow:ellipsis;white-space:nowrap;font-size:.92rem}
+.immersive-back{justify-self:start;border:0;background:transparent;color:var(--blue);font:inherit;font-weight:700;cursor:pointer;padding:10px 4px}
+.immersive-back:hover{text-decoration:underline}
+.immersive-activity{min-width:0;min-height:0;padding:6px;background:#e9edf2}
+.immersive-activity iframe{display:block;width:100%;height:100%;border:0;border-radius:6px;background:#fff}
+.immersive-player-actions{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:8px 18px;border-top:1px solid var(--border);background:#fff}
+.immersive-player-actions>div{display:flex;gap:10px;flex:none}
+.immersive-player-actions button{min-width:108px}
+.immersive-player-actions .save-indicator{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-soft);font-size:.78rem}
+.immersive-player-actions .save-indicator.error{color:#a23b36}
+@media(max-width:640px){.immersive-player{grid-template-rows:50px minmax(0,1fr) 62px}.immersive-player-bar{grid-template-columns:72px minmax(0,1fr) 72px;padding:0 10px}.immersive-back span{display:none}.immersive-activity{padding:2px}.immersive-player-actions{padding:7px 10px}.immersive-player-actions .save-indicator{font-size:0}.immersive-player-actions .save-indicator:before{content:'●';font-size:.72rem;color:#3f7b61}.immersive-player-actions .save-indicator.error:before{color:#a23b36}.immersive-player-actions button{min-width:0;padding-left:14px;padding-right:14px}}
+
 /* Student organization and teacher read-only preview */
 .student-tabs { grid-template-columns: repeat(3,1fr); }
 .student-folder-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 12px; }

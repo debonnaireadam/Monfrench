@@ -159,7 +159,7 @@ async function staffDashboard(current: Session) {
 
 async function studentDashboard(studentId: string, student?: Pick<User, "id" | "username" | "display_name" | "role" | "must_change_password">) {
   const [assignments, folders, user] = await Promise.all([
-    env.DB.prepare(`SELECT a.id,ac.id activity_id,a.activity_version_id,a.due_at,COALESCE(NULLIF(a.instructions,''),v.instructions,ac.instructions) instructions,COALESCE(v.title,ac.title) title,COALESCE(v.category,ac.category) category,COALESCE(v.description,ac.description) description,COALESCE(v.original_name,ac.original_name) original_name,COALESCE(v.content_type,ac.content_type) content_type,COALESCE(v.external_url,ac.external_url) external_url,COALESCE(v.runtime_kind,'generic') runtime_kind,COALESCE(v.online_capable,0) online_capable,ast.status,s.id submission_id,s.writing,s.original_name submission_original_name,s.feedback,s.corrected_at,CASE WHEN s.corrected_r2_key IS NOT NULL THEN 1 ELSE 0 END has_corrected_file,s.corrected_original_name,s.corrected_content_type,saf.folder_id student_folder_id FROM assignment_students ast JOIN assignments a ON a.id=ast.assignment_id JOIN activities ac ON ac.id=a.activity_id LEFT JOIN activity_versions v ON v.id=a.activity_version_id LEFT JOIN submissions s ON s.assignment_id=a.id AND s.student_id=ast.student_id LEFT JOIN student_assignment_folders saf ON saf.assignment_id=a.id AND saf.student_id=ast.student_id WHERE ast.student_id=? AND a.status='published' AND a.trashed_at IS NULL ORDER BY a.published_at DESC`).bind(studentId).all(),
+    env.DB.prepare(`SELECT a.id,ac.id activity_id,a.activity_version_id,a.due_at,COALESCE(NULLIF(a.instructions,''),v.instructions,ac.instructions) instructions,COALESCE(NULLIF(saf.custom_title,''),v.title,ac.title) title,COALESCE(v.category,ac.category) category,COALESCE(v.description,ac.description) description,COALESCE(v.original_name,ac.original_name) original_name,COALESCE(v.content_type,ac.content_type) content_type,COALESCE(v.external_url,ac.external_url) external_url,COALESCE(v.runtime_kind,'generic') runtime_kind,COALESCE(v.online_capable,0) online_capable,ast.status,s.id submission_id,s.writing,s.original_name submission_original_name,s.feedback,s.corrected_at,CASE WHEN s.corrected_r2_key IS NOT NULL THEN 1 ELSE 0 END has_corrected_file,s.corrected_original_name,s.corrected_content_type,saf.folder_id student_folder_id FROM assignment_students ast JOIN assignments a ON a.id=ast.assignment_id JOIN activities ac ON ac.id=a.activity_id LEFT JOIN activity_versions v ON v.id=a.activity_version_id LEFT JOIN submissions s ON s.assignment_id=a.id AND s.student_id=ast.student_id LEFT JOIN student_assignment_folders saf ON saf.assignment_id=a.id AND saf.student_id=ast.student_id WHERE ast.student_id=? AND a.status='published' AND a.trashed_at IS NULL AND saf.hidden_at IS NULL ORDER BY a.published_at DESC`).bind(studentId).all(),
     env.DB.prepare(`SELECT id,name,parent_id,created_at,updated_at FROM folders WHERE scope='student' AND created_by=? AND trashed_at IS NULL ORDER BY name`).bind(studentId).all(),
     student ? Promise.resolve(student) : env.DB.prepare(`SELECT id,username,display_name,role,must_change_password FROM users WHERE id=? AND role='student' AND active=1 AND trashed_at IS NULL`).bind(studentId).first<User>(),
   ]);
@@ -410,6 +410,21 @@ export async function POST(request: Request) {
       const folderId=String(get(data,"folderId")??"");if(!folderId)return json({error:"Dossier invalide."},400);
       const owned=await env.DB.prepare(`SELECT 1 ok FROM folders WHERE id=? AND scope='student' AND created_by=? AND trashed_at IS NULL`).bind(folderId,studentId).first();if(!owned)return json({error:"Dossier introuvable."},404);
       const stamp=now();await env.DB.batch([env.DB.prepare(`WITH RECURSIVE tree(id) AS (SELECT id FROM folders WHERE id=? AND scope='student' AND created_by=? UNION ALL SELECT f.id FROM folders f JOIN tree t ON f.parent_id=t.id WHERE f.scope='student' AND f.created_by=?) UPDATE student_assignment_folders SET folder_id=NULL,updated_at=? WHERE student_id=? AND folder_id IN (SELECT id FROM tree)`).bind(folderId,studentId,studentId,stamp,studentId),env.DB.prepare(`WITH RECURSIVE tree(id) AS (SELECT id FROM folders WHERE id=? AND scope='student' AND created_by=? UNION ALL SELECT f.id FROM folders f JOIN tree t ON f.parent_id=t.id WHERE f.scope='student' AND f.created_by=?) UPDATE folders SET trashed_at=?,updated_at=? WHERE id IN (SELECT id FROM tree)`).bind(folderId,studentId,studentId,stamp,stamp)]);return json({ok:true});
+    }
+
+    if(staff(current)&&(action==="rename_student_assignment"||action==="delete_student_assignment")){
+      const studentId=String(get(data,"studentId")??""),assignmentId=String(get(data,"assignmentId")??"");
+      if(!await ownsStudent(current,studentId))return json({error:"Accès refusé."},403);
+      const assigned=await env.DB.prepare(`SELECT 1 ok FROM assignment_students ast JOIN assignments a ON a.id=ast.assignment_id WHERE ast.assignment_id=? AND ast.student_id=? AND a.trashed_at IS NULL`).bind(assignmentId,studentId).first();
+      if(!assigned)return json({error:"Activité introuvable."},404);
+      const stamp=now();
+      if(action==="rename_student_assignment"){
+        const name=String(get(data,"name")??"").trim();if(!name||name.length>180)return json({error:"Nom invalide."},400);
+        await env.DB.prepare(`INSERT INTO student_assignment_folders(assignment_id,student_id,custom_title,updated_at) VALUES(?,?,?,?) ON CONFLICT(assignment_id,student_id) DO UPDATE SET custom_title=excluded.custom_title,updated_at=excluded.updated_at`).bind(assignmentId,studentId,name,stamp).run();
+      }else{
+        await env.DB.prepare(`INSERT INTO student_assignment_folders(assignment_id,student_id,hidden_at,updated_at) VALUES(?,?,?,?) ON CONFLICT(assignment_id,student_id) DO UPDATE SET hidden_at=excluded.hidden_at,updated_at=excluded.updated_at`).bind(assignmentId,studentId,stamp,stamp).run();
+      }
+      await audit(current,action,"assignment",assignmentId,{studentId});return json({ok:true});
     }
 
     if(staff(current)&&action==="view_student_space"){

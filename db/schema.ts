@@ -143,6 +143,8 @@ export const studentAssignmentFolders = sqliteTable("student_assignment_folders"
   assignmentId: text("assignment_id").notNull().references(() => assignments.id, { onDelete: "cascade" }),
   studentId: text("student_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   folderId: text("folder_id").references(() => folders.id, { onDelete: "set null" }),
+  customTitle: text("custom_title"),
+  hiddenAt: text("hidden_at"),
   updatedAt: text("updated_at").notNull(),
 }, (table) => [
   uniqueIndex("student_assignment_folder_idx").on(table.assignmentId, table.studentId),

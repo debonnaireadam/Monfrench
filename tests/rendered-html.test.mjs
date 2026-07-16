@@ -247,6 +247,7 @@ test("Glassbook work is shared and completion creates no PDF", async () => {
 });
 
 test("student folders, teacher preview and correction return are server-authorized", async () => {
+  const page = await readFile("app/page.tsx", "utf8");
   const route = await readFile("app/api/portal/route.ts", "utf8");
   const fileRoute = await readFile("app/api/file/route.ts", "utf8");
   assert.match(route, /create_student_folder/);
@@ -258,6 +259,11 @@ test("student folders, teacher preview and correction return are server-authoriz
   assert.match(route, /corrected_original_name/);
   assert.match(route, /has_corrected_file/);
   assert.match(fileRoute, /s\.corrected_content_type/);
+  assert.match(page, /rename_student_assignment/);
+  assert.match(page, /delete_student_assignment/);
+  assert.match(route, /custom_title/);
+  assert.match(route, /hidden_at IS NULL/);
+  assert.match(route, /ownsStudent\(current,studentId\)/);
 });
 
 test("Google Drive access is teacher-only and uses a short-lived browser token", async () => {

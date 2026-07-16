@@ -74,6 +74,8 @@ test("build contains the portal and protected API routes", async () => {
   assert.match(page, /Marquer comme révisé/);
   assert.doesNotMatch(page, /Joindre un fichier corrigé/);
   assert.match(page, /Voir l’espace de l’élève/);
+  assert.doesNotMatch(page, /display_name} 👋/);
+  assert.match(await readFile("app/globals.css", "utf8"), /Compact student workspace/);
 });
 
 test("authentication uses keyed password hashes, server sessions and CSRF", async () => {

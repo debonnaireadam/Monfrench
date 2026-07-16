@@ -546,6 +546,25 @@ button.explorer-open { cursor: pointer; }
   .file-viewer, .student-space-modal { width: 100%; height: 100vh; max-height: 100vh; border-radius: 0; }
   .file-viewer > header { align-items: flex-start; }
 }
+/* Compact student workspace */
+.student-page { max-width: 1360px; padding: 18px clamp(14px,3vw,30px) 48px; }
+.student-page .student-header { align-items: center; gap: 12px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.student-page .student-header > div { min-width: 0; }
+.student-page .student-header h1 { margin: 0; font-size: clamp(1.45rem,2.4vw,2rem); line-height: 1; }
+.student-page .student-header .secondary-button { min-height: 34px; width: auto; padding: 6px 11px; border-radius: 9px; white-space: nowrap; }
+.student-page .student-tabs { display: flex; grid-template-columns: none; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+.student-page .student-tabs button { min-height: 34px; padding: 5px 11px; border-radius: 9px; font-size: .78rem; }
+.student-page .student-tabs span { min-width: 18px; height: 18px; margin-left: 5px; font-size: .65rem; }
+.student-page .student-folder-toolbar { min-height: 26px; margin-bottom: 7px; }
+.student-page .student-folder-toolbar .breadcrumbs { min-height: 26px; }
+.student-page .assignment-grid { gap: 10px; }
+@media (max-width: 680px) {
+  .student-page { padding-top: 12px; }
+  .student-page .student-header { align-items: center; flex-direction: row; }
+  .student-page .student-header .secondary-button { width: auto; }
+  .student-page .student-tabs { display: flex; grid-template-columns: none; }
+  .student-page .student-folder-toolbar { align-items: center; flex-direction: row; }
+}
 /* Functional portal forms */
 .login-form { display: grid; gap: 1rem; margin-top: 1.5rem; }
 .login-form label, .teacher-panel label, .library-card label, .assignment-card label { display: grid; gap: .45rem; font-weight: 700; }

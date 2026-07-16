@@ -159,7 +159,7 @@ test("Glassbook student exports can be saved into the activity library", async (
   assert.match(page, /uploadActivityFile\(portal/);
   assert.match(page, /runtimeKind:"glassbook"/);
   assert.match(page, /monfrench:activity-connect/);
-  assert.match(page, /build-submission-pdf/);
+  assert.doesNotMatch(page, /build-submission-pdf/);
   assert.match(page, /save_progress/);
   assert.match(page, /Créer et enregistrer la version élève/);
   assert.match(route, /user\.role !== "owner" && user\.role !== "teacher"/);
@@ -172,13 +172,18 @@ test("Glassbook student exports can be saved into the activity library", async (
   assert.equal(createHash("sha256").update(glassbookSource).digest("hex").toUpperCase(), "A5E57F98DEB749DEF4067DDF5AE25785707CC739B0CBC8FBECCDE832441CBFB8");
 });
 
-test("Glassbook student work is saved and submitted through the portal", async () => {
+test("Glassbook work is shared and completion creates no PDF", async () => {
   const route = await readFile("app/api/portal/route.ts", "utf8");
-  assert.match(route, /studentActions=\["open_assignment","get_progress","save_progress","submit"/);
+  const page = await readFile("app/page.tsx", "utf8");
+  assert.match(route, /complete_assignment/);
   assert.match(route, /INSERT INTO student_work/);
   assert.match(route, /glassbook\.student-state/);
   assert.match(route, /onlineCapable=runtimeKind==="glassbook"\?1:0/);
   assert.match(route, /UPDATE student_work SET status='submitted'/);
+  assert.match(route, /expectedStateVersion/);
+  assert.match(page, /teacherMode/);
+  assert.match(page, /Travail terminé/);
+  assert.doesNotMatch(page, /build-submission-pdf/);
 });
 
 test("student folders, teacher preview and correction return are server-authorized", async () => {

@@ -272,11 +272,14 @@ test("Glassbook work is shared and completion creates no PDF", async () => {
   const page = await readFile("app/page.tsx", "utf8");
   assert.match(route, /complete_assignment/);
   assert.match(route, /INSERT INTO student_work/);
-  assert.match(route, /glassbook\.student-state/);
-  assert.match(route, /onlineCapable=runtimeKind==="glassbook"\?1:0/);
+  assert.match(route, /expectedSchema=`\$\{envelopeApp\}\.student-state`/);
+  assert.match(route, /\["glassbook","pellucide"\]\.includes\(runtimeKind\)\?1:0/);
   assert.match(route, /UPDATE student_work SET status='submitted'/);
   assert.match(route, /expectedStateVersion/);
   assert.match(page, /teacherMode/);
+  assert.match(page, /apps:string\[\]=\["glassbook","pellucide"\]/);
+  assert.match(page, /expectedApp/);
+  assert.match(page, /Vos modifications ne sont pas enregistrées/);
   assert.match(page, /onlineGlassbook\?setActive\(a\):setOnlineFile/);
   assert.match(page, /isOnline\?setActive\(item\):setOnlineFile/);
   assert.ok((page.match(/Accéder à l’activité en ligne/g) || []).length >= 5);

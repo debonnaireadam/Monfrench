@@ -63,7 +63,7 @@ test("build contains the portal and protected API routes", async () => {
   assert.ok((page.match(/label:"Aperçu"/g) || []).length >= 3);
   assert.match(page, /popup,width=1100,height=800/);
   assert.match(page, />Aperçu<\/button>/);
-  assert.match(page, /compact onClose/);
+  assert.match(page, /compact=\{preview\.compact\}/);
   assert.match(page, /Dépôt multiple/);
   assert.match(page, /multiple onChange/);
   assert.match(page, /file\.name\.replace/);
@@ -276,8 +276,8 @@ test("Glassbook work is shared and completion creates no PDF", async () => {
   assert.match(route, /UPDATE student_work SET status='submitted'/);
   assert.match(route, /expectedStateVersion/);
   assert.match(page, /teacherMode/);
-  assert.match(page, /onlineGlassbook&&!readOnly/);
-  assert.match(page, /Accéder à l’activité en ligne/);
+  assert.match(page, /onlineGlassbook\?setActive\(a\):setViewer/);
+  assert.ok((page.match(/Accéder à l’activité en ligne/g) || []).length >= 5);
   assert.match(page, /Travail terminé/);
   assert.doesNotMatch(page, /Faire l’activité en ligne/);
   assert.doesNotMatch(page, /build-submission-pdf/);

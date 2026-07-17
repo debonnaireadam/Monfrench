@@ -139,6 +139,11 @@ test("private files require ownership or assignment access", async () => {
   assert.match(route, /"Cache-Control": "private, no-store"/);
   assert.match(route, /const disposition = url\.searchParams\.get\("download"\).*"inline"/);
   assert.match(route, /sandbox allow-scripts allow-popups allow-downloads allow-forms allow-modals/);
+  assert.match(route, /legacyGlassbookBridge/);
+  assert.match(route, /window\.GBS\.buildSaveState/);
+  assert.match(route, /window\.GBS\.restoreFromSave/);
+  assert.match(route, /capabilities: \["state-v1"\]/);
+  assert.match(route, /disposition === "inline" \? addLegacyBridge/);
 });
 
 test("large activity files use authenticated staged R2 uploads", async () => {

@@ -7,6 +7,50 @@ const hex = (bytes: Uint8Array) => [...bytes].map((value) => value.toString(16).
 const hash = async (value: string) => hex(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value))));
 const cookie = (request: Request) => request.headers.get("cookie")?.split(";").map((part) => part.trim()).find((part) => part.startsWith("monfrench_session="))?.slice("monfrench_session=".length);
 const staff = (user: User) => user.role === "owner" || user.role === "teacher";
+const legacyGlassbookBridge = `<script>
+(() => {
+  if (typeof window.GBS !== "object" || typeof window.GBS.buildSaveState !== "function") return;
+  let connected = false;
+  window.addEventListener("message", (event) => {
+    const message = event.data || {};
+    if (connected || event.source !== window.parent || message.type !== "monfrench:activity-connect" || message.protocolVersion !== 1 || message.app !== "glassbook" || !event.ports || !event.ports[0]) return;
+    connected = true;
+    const port = event.ports[0];
+    try { mfPort = port; } catch {}
+    port.onmessage = (portEvent) => {
+      const request = portEvent.data || {}, requestId = String(request.requestId || "");
+      const reply = (type, payload = {}) => port.postMessage({ type, requestId, ...payload });
+      try {
+        if (request.type === "get-state") {
+          const state = window.GBS.buildSaveState();
+          const envelope = window.GBS.migrateLocalStateToEnvelope(state);
+          if (!envelope) throw new Error("État Glassbook indisponible.");
+          envelope.revision = Number(window.GBS.stateRevision || 0);
+          envelope.savedAt = new Date().toISOString();
+          reply("state-result", { ok: true, envelope });
+        } else if (request.type === "load-state") {
+          const envelope = request.envelope;
+          if (!envelope || envelope.schema !== "glassbook.student-state" || envelope.schemaVersion !== 1 || envelope.app !== "glassbook" || !envelope.state || envelope.documentId !== window.GBS.D.docId) throw new Error("État Glassbook incompatible.");
+          window.GBS.restoreFromSave(envelope.state);
+          window.GBS.saveNow();
+          reply("load-state-result", { ok: true });
+        }
+      } catch (error) {
+        const type = request.type === "load-state" ? "load-state-result" : "state-result";
+        reply(type, { ok: false, message: error instanceof Error ? error.message : "Action impossible." });
+      }
+    };
+    port.start();
+    port.postMessage({ type: "ready", protocolVersion: 1, app: "glassbook", mode: "student", capabilities: ["state-v1"] });
+  });
+})();
+</script>`;
+
+function addLegacyBridge(html: string) {
+  if (html.includes("monfrench:activity-connect") || !html.includes("window.GBS") || !html.includes("glassbook.student-state")) return html;
+  const marker = /<\/body\s*>/i;
+  return marker.test(html) ? html.replace(marker, `${legacyGlassbookBridge}</body>`) : `${html}${legacyGlassbookBridge}`;
+}
 
 async function activityFile(user: User, recordId: string) {
   if (staff(user)) {
@@ -41,7 +85,8 @@ export async function GET(request: Request) {
   const contentType = row.content_type || object.httpMetadata?.contentType || "application/octet-stream";
   const html = /text\/html|application\/xhtml\+xml/i.test(contentType) || /\.html?$/i.test(row.original_name ?? "");
   const disposition = url.searchParams.get("download") === "1" ? "attachment" : "inline";
-  return new Response(object.body, { headers: {
+  const body = html && disposition === "inline" ? addLegacyBridge(await object.text()) : object.body;
+  return new Response(body, { headers: {
     "Content-Type": contentType,
     "Content-Disposition": `${disposition}; filename*=UTF-8''${encodeURIComponent(row.original_name || "fichier")}`,
     "Cache-Control": "private, no-store",

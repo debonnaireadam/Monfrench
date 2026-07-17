@@ -146,6 +146,7 @@ test("private files require ownership or assignment access", async () => {
   assert.match(route, /disposition === "inline" \? addLegacyBridge/);
   assert.match(route, /html\.matchAll\(\/<\\\/body\\s\*>\/gi\)/);
   assert.match(route, /markers\.at\(-1\)/);
+  assert.match(route, /marker\.index < lastScript/);
 });
 
 test("large activity files use authenticated staged R2 uploads", async () => {

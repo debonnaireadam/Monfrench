@@ -48,8 +48,8 @@ const legacyGlassbookBridge = `<script>
 
 function addLegacyBridge(html: string) {
   if (html.includes("monfrench:activity-connect") || !html.includes("window.GBS") || !html.includes("glassbook.student-state")) return html;
-  const markers = [...html.matchAll(/<\/body\s*>/gi)], marker = markers.at(-1);
-  if (!marker?.index) return `${html}${legacyGlassbookBridge}`;
+  const markers = [...html.matchAll(/<\/body\s*>/gi)], marker = markers.at(-1), lastScript = html.toLowerCase().lastIndexOf("</script>");
+  if (!marker?.index || marker.index < lastScript) return `${html}${legacyGlassbookBridge}`;
   return `${html.slice(0,marker.index)}${legacyGlassbookBridge}${html.slice(marker.index)}`;
 }
 

@@ -316,6 +316,14 @@ test("student folders, teacher preview and correction return are server-authoriz
   assert.match(route, /ownsStudent\(current,studentId\)/);
 });
 
+test("PDF and document activities remain embeddable in the MonFrench viewer", async () => {
+  const page = await readFile("app/page.tsx", "utf8");
+  const fileRoute = await readFile("app/api/file/route.ts", "utf8");
+  assert.match(fileRoute, /: "frame-ancestors 'self'"/);
+  assert.doesNotMatch(fileRoute, /: "sandbox",/);
+  assert.match(page, /<iframe src=\{url\} title=\{`Activité \$\{title\}`\}\/>/);
+});
+
 test("Google Drive access is teacher-only and uses a short-lived browser token", async () => {
   const page = await readFile("app/page.tsx", "utf8");
   const route = await readFile("app/api/portal/route.ts", "utf8");

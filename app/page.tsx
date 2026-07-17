@@ -350,7 +350,7 @@ function FileViewer({url,title,onClose,compact=false}:{url:string;title:string;o
 }
 
 function ActivityFullscreen({url,title,onClose}:{url:string;title:string;onClose:()=>void}){
-  return <div className="player-page immersive-player"><header className="immersive-player-bar"><button className="immersive-back" onClick={onClose}>← <span>Retour</span></button><strong title={title}>{title}</strong><span aria-hidden="true"/></header><main className="immersive-activity"><iframe src={url} title={`Activité ${title}`} sandbox="allow-scripts allow-popups allow-downloads allow-forms allow-modals"/></main></div>;
+  return <div className="player-page immersive-player"><header className="immersive-player-bar"><button className="immersive-back" onClick={onClose}>← <span>Retour</span></button><strong title={title}>{title}</strong><span aria-hidden="true"/></header><main className="immersive-activity"><iframe src={url} title={`Activité ${title}`}/></main></div>;
 }
 
 function Corrections({portal,send,busy}:{portal:Portal;send:(x:any)=>Promise<boolean>;busy:boolean}){

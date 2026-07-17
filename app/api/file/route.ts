@@ -94,6 +94,6 @@ export async function GET(request: Request) {
     "X-Content-Type-Options": "nosniff",
     "Content-Security-Policy": html
       ? "default-src 'none'; script-src 'unsafe-inline' blob:; worker-src blob:; child-src blob:; style-src 'unsafe-inline'; img-src data: blob:; media-src data: blob:; font-src data: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'; sandbox allow-scripts allow-popups allow-downloads allow-forms allow-modals"
-      : "sandbox",
+      : "frame-ancestors 'self'",
   } });
 }

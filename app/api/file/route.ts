@@ -87,13 +87,12 @@ export async function GET(request: Request) {
   const html = /text\/html|application\/xhtml\+xml/i.test(contentType) || /\.html?$/i.test(row.original_name ?? "");
   const disposition = url.searchParams.get("download") === "1" ? "attachment" : "inline";
   const body = html && disposition === "inline" ? addLegacyBridge(await object.text()) : object.body;
-  return new Response(body, { headers: {
+  const headers = new Headers({
     "Content-Type": contentType,
     "Content-Disposition": `${disposition}; filename*=UTF-8''${encodeURIComponent(row.original_name || "fichier")}`,
     "Cache-Control": "private, no-store",
     "X-Content-Type-Options": "nosniff",
-    "Content-Security-Policy": html
-      ? "default-src 'none'; script-src 'unsafe-inline' blob:; worker-src blob:; child-src blob:; style-src 'unsafe-inline'; img-src data: blob:; media-src data: blob:; font-src data: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'; sandbox allow-scripts allow-popups allow-downloads allow-forms allow-modals"
-      : "frame-ancestors 'self'",
-  } });
+  });
+  if (html) headers.set("Content-Security-Policy", "default-src 'none'; script-src 'unsafe-inline' blob:; worker-src blob:; child-src blob:; style-src 'unsafe-inline'; img-src data: blob:; media-src data: blob:; font-src data: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'; sandbox allow-scripts allow-popups allow-downloads allow-forms allow-modals");
+  return new Response(body, { headers });
 }

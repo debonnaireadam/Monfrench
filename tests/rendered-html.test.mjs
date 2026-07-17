@@ -319,8 +319,8 @@ test("student folders, teacher preview and correction return are server-authoriz
 test("PDF and document activities remain embeddable in the MonFrench viewer", async () => {
   const page = await readFile("app/page.tsx", "utf8");
   const fileRoute = await readFile("app/api/file/route.ts", "utf8");
-  assert.match(fileRoute, /: "frame-ancestors 'self'"/);
-  assert.doesNotMatch(fileRoute, /: "sandbox",/);
+  assert.match(fileRoute, /if \(html\) headers\.set\("Content-Security-Policy"/);
+  assert.doesNotMatch(fileRoute, /else headers\.set\("Content-Security-Policy"/);
   assert.match(page, /<iframe src=\{url\} title=\{`Activité \$\{title\}`\}\/>/);
 });
 

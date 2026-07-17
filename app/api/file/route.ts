@@ -48,8 +48,9 @@ const legacyGlassbookBridge = `<script>
 
 function addLegacyBridge(html: string) {
   if (html.includes("monfrench:activity-connect") || !html.includes("window.GBS") || !html.includes("glassbook.student-state")) return html;
-  const marker = /<\/body\s*>/i;
-  return marker.test(html) ? html.replace(marker, `${legacyGlassbookBridge}</body>`) : `${html}${legacyGlassbookBridge}`;
+  const markers = [...html.matchAll(/<\/body\s*>/gi)], marker = markers.at(-1);
+  if (!marker?.index) return `${html}${legacyGlassbookBridge}`;
+  return `${html.slice(0,marker.index)}${legacyGlassbookBridge}${html.slice(marker.index)}`;
 }
 
 async function activityFile(user: User, recordId: string) {

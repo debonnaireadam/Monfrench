@@ -568,6 +568,7 @@ button.explorer-open { cursor: pointer; }
 .student-shortcut strong { overflow: hidden; font-size: calc(.68rem * var(--student-shortcut-size,1)); text-overflow: ellipsis; white-space: nowrap; }
 .student-shortcut > span { flex: 0 0 auto; font-size: calc(.82rem * var(--student-shortcut-size,1)); }
 .student-shortcut.empty { border-style: dashed; color: var(--navy); }
+.student-shortcut.add { flex: 0 0 34px; padding: 0; border-style: dashed; background: var(--paper); font-size: 1.15rem; }
 .student-shortcut.shortcut-square { padding: 0; border-radius: 9px; }
 .student-shortcut.shortcut-square strong { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
 .student-shortcut.shortcut-soft { border: 0; border-radius: 11px; box-shadow: 0 5px 14px rgba(22,50,79,.1); }
@@ -576,6 +577,13 @@ button.explorer-open { cursor: pointer; }
 .student-shortcut-editor { position: absolute; z-index: 70; top: calc(100% + 9px); right: 0; width: min(760px,calc(100vw - 28px)); padding: 12px; border: 1px solid var(--border); border-radius: 14px; background: var(--paper); box-shadow: var(--shadow); }
 .student-shortcut-editor > header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .student-shortcut-editor > header button { width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; background: var(--ivory); cursor: pointer; }
+.shortcut-simple-editor { width: min(430px,calc(100vw - 28px)); }
+.shortcut-simple-list { display: grid; gap: 6px; }
+.shortcut-simple-list > div { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 8px 4px; border-bottom: 1px solid var(--border); }
+.shortcut-simple-list > div span { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.shortcut-simple-list i { font-style: normal; }
+.shortcut-simple-list .danger-text { flex: 0 0 auto; }
+.shortcut-add-button { width: 100%; margin-top: 10px; }
 .shortcut-size-control { display: flex; align-items: center; gap: 7px; margin-left: auto; margin-right: 8px; font-size: .7rem; font-weight: 800; }
 .shortcut-size-control input { width: 100px; accent-color: var(--navy); }
 .shortcut-size-control span { min-width: 34px; color: var(--ink-soft); }
